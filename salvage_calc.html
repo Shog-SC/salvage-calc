@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Salvage SCU → Construction Material Calculator</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #1a1a1a;
+        color: #e0e0e0;
+        text-align: center;
+        margin-top: 50px;
+    }
+    .box {
+        background: #262626;
+        padding: 20px;
+        width: 400px;
+        margin: auto;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px #000;
+    }
+    input {
+        width: 80%;
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        margin-top: 10px;
+        font-size: 16px;
+    }
+    button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background: #00b894;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+        font-size: 16px;
+    }
+    button:hover {
+        background: #019874;
+    }
+    .result {
+        margin-top: 20px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<div class="box">
+    <h2>🛠️ Salvage Calculator 4.4</h2>
+    <p>Convertir SCU de <b>Construction Salvage</b> → <b>Construction Material</b></p>
+
+    <input type="number" id="inputSCU" placeholder="Entrez les SCU de Construction Salvage">
+    <button onclick="calculate()">Calculer</button>
+
+    <div class="result" id="resultBox"></div>
+</div>
+
+<script>
+    function calculate() {
+        let scu = parseFloat(document.getElementById("inputSCU").value);
+
+        // Ratio actuel (observations)
+        // 1 SCU Construction Salvage ≈ 0.125 SCU Construction Material
+        // → Car 1 boîte de 16 SCU donne ~2 SCU utilisables
+        let result = scu * 0.125;
+
+        document.getElementById("resultBox").innerHTML =
+            "➡️ Cela donnera environ : <br><br>" +
+            "<span style='color:#00ff99; font-size:26px;'>" +
+            result.toFixed(2) +
+            " SCU de Construction Material</span>";
+    }
+</script>
+
+</body>
+</html>
+
