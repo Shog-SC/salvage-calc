@@ -3,20 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <title>Salvage 4.4 – Calcul CMAT</title>
+
 <style>
     body {
         margin: 0;
         padding: 0;
         font-family: 'Segoe UI', sans-serif;
-        color: #eee;
-        background: #111 url('background.jpg') no-repeat center center fixed;
+        color: #f2f2f2;
+        background: #000 url("background.jpg") no-repeat center center fixed;
         background-size: cover;
     }
 
     .container {
         padding: 30px;
-        backdrop-filter: blur(6px);
-        background: rgba(0,0,0,0.65);
+        background: rgba(0,0,0,0.70);
+        backdrop-filter: blur(5px);
         max-width: 1100px;
         margin: 50px auto;
         border: 2px solid #FFB000;
@@ -26,28 +27,37 @@
     h1 {
         color: #FFB000;
         text-align: center;
-        font-size: 32px;
+        font-size: 38px;
         margin-bottom: 25px;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
     }
 
     label {
         display: block;
         margin-top: 12px;
         font-weight: bold;
+        font-size: 18px;
     }
 
     input {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         margin-top: 5px;
         border: 2px solid #FFB000;
         border-radius: 6px;
-        background: #222;
+        background: #1b1b1b;
         color: #fff;
-        font-size: 18px;
+        font-size: 20px;
         outline: none;
+        -moz-appearance: textfield;
+    }
+
+    /* Supprime les flèches input number */
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
     }
 
     .grid {
@@ -57,38 +67,39 @@
     }
 
     .box {
-        padding: 20px;
-        background: rgba(20,20,20,0.8);
+        padding: 25px;
+        background: rgba(20,20,20,0.9);
         border-radius: 8px;
         border: 1px solid #FFB000;
     }
 
     .title {
         color: #FFB000;
-        font-size: 22px;
-        margin-bottom: 10px;
+        font-size: 24px;
+        margin-bottom: 15px;
         font-weight: bold;
     }
 
     .result {
         background: #222;
-        padding: 15px;
-        margin-top: 10px;
+        padding: 18px;
+        margin-top: 12px;
         border-radius: 6px;
-        border-left: 4px solid #FF8000;
-        font-size: 18px;
+        border-left: 5px solid #FF8000;
+        font-size: 20px;
         white-space: pre-line;
     }
 </style>
+
 </head>
 <body>
 
 <div class="container">
-    <h1>SALVAGE 4.4 – CALCUL CMAT</h1>
+    <h1>SALVAGE 4.4 — CALCUL CMAT</h1>
 
     <div class="grid">
 
-        <!-- LEFT SIDE – INPUTS -->
+        <!-- LEFT SIDE -->
         <div class="box">
             <div class="title">Entrées</div>
 
@@ -105,7 +116,7 @@
             <input id="scuReclaimer" type="number" value="320">
         </div>
 
-        <!-- RIGHT SIDE – RESULTS -->
+        <!-- RIGHT SIDE -->
         <div class="box">
             <div class="title">Résultats estimés</div>
             <div id="resultLight" class="result"></div>
@@ -113,43 +124,42 @@
         </div>
 
     </div>
-
 </div>
 
 <script>
-// Rendements salvage 4.4
+// Rendements salvage (4.4 LIVE)
 const rendementLight = 0.30;      // Salvation / Vulture / Fortune
-const rendementReclaimer = 0.15;  // Reclaimer (grosse perte au compactage)
+const rendementReclaimer = 0.15;  // Reclaimer (perte volumique massive)
 
-// Fonction principale de calcul
+// Main calculation function
 function recalcul() {
     let prixBrut = Number(prixBrutInput.value);
     let prixRaf = Number(prixRaffineInput.value);
     let scuLight = Number(scuLightInput.value);
     let scuReclaimer = Number(scuReclaimerInput.value);
 
-    // Résultats LIGHT SALVAGE
+    // LIGHT SHIPS
     let lightBrut = scuLight * prixBrut;
     let lightRaf = (scuLight * rendementLight) * prixRaf;
 
-    // Résultats RECLAIMER
+    // RECLAIMER
     let recBrut = scuReclaimer * prixBrut;
     let recRaf = (scuReclaimer * rendementReclaimer) * prixRaf;
 
     resultLight.innerText =
-        `Salvation / Vulture / Fortune (30%) :
-        
-Brut  : ${lightBrut.toLocaleString()} aUEC
-Raffiné : ${lightRaf.toLocaleString()} aUEC`;
+`Salvation / Vulture / Fortune (30%) :
+
+Brut     : ${lightBrut.toLocaleString()} aUEC
+Raffiné  : ${lightRaf.toLocaleString()} aUEC`;
 
     resultReclaimer.innerText =
-        `Reclaimer (15%) :
+`Reclaimer (15%) :
 
-Brut  : ${recBrut.toLocaleString()} aUEC
-Raffiné : ${recRaf.toLocaleString()} aUEC`;
+Brut     : ${recBrut.toLocaleString()} aUEC
+Raffiné  : ${recRaf.toLocaleString()} aUEC`;
 }
 
-// Bind inputs to auto-update
+// Auto-update bindings
 let prixBrutInput = document.getElementById("prixBrut");
 let prixRaffineInput = document.getElementById("prixRaffine");
 let scuLightInput = document.getElementById("scuLight");
@@ -162,26 +172,36 @@ scuReclaimerInput.oninput = recalcul;
 
 recalcul();
 
-// API READY – prix dynamiques UEX
-async function getCmatPriceFromAPI() {
-    const key = window.API_KEY; // Chargé depuis un fichier séparé !
-  
-    const response = await fetch("https://api.uexcorp.space/v2/items_prices", {
-        headers: { "Authorization": "Bearer " + key }
+/* ---- API UEX (PRIX TEMPS RÉEL) ----
+   → mettre ta clé dans api_key.js :
+   window.API_KEY = "XXXX";
+-------------------------------------- */
+
+async function getPricesFromUEX() {
+    if (!window.API_KEY) return;
+
+    const res = await fetch("https://api.uexcorp.space/v2/items_prices", {
+        headers: { "Authorization": "Bearer " + window.API_KEY }
     });
 
-    const data = await response.json();
+    const data = await res.json();
 
-    // IMPORTANT : il faut trouver l’ID exact du CMAT dans la liste UEX
-    const cmat = data.find(x => x.name === "Construction Material");
+    // Chercher le CMAT dans la liste UEX
+    const cmat = data.find(item => item.name?.toLowerCase().includes("construction material"));
 
     if (cmat) {
-        prixBrutInput.value = cmat.sell_price;
-        prixRaffineInput.value = cmat.buy_price;
+        prixBrutInput.value = cmat.sell_price || prixBrutInput.value;
+        prixRaffineInput.value = cmat.buy_price || prixRaffineInput.value;
         recalcul();
     }
 }
+
+// Décommente pour activer l’API automatiquement :
+// getPricesFromUEX();
 </script>
+
+<!-- Fichier séparé pour API KEY -->
+<script src="api_key.js"></script>
 
 </body>
 </html>
