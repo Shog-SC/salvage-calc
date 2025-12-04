@@ -1,478 +1,182 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Salvage 4.4 – Calculateur CMAT</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    :root {
-      --bg: #05070d;
-      --bg-panel: #0e1322;
-      --bg-panel-soft: #151b2d;
-      --accent: #00d8ff;
-      --accent-soft: rgba(0, 216, 255, 0.16);
-      --danger: #ff4b5c;
-      --text: #f5f7ff;
-      --text-soft: #a7b1d4;
-      --border: #242a3f;
-      --radius: 16px;
-      --shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
-    }
+<meta charset="UTF-8">
+<title>Salvage 4.4 – CMAT Calculator</title>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, sans-serif;
-    }
-
+<style>
     body {
-      background: radial-gradient(circle at top, #111936 0, #05070d 55%);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px;
-      display: flex;
-      justify-content: center;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: url('ScreenShot-2025-12-03_14-48-51-509.jpg') no-repeat center center fixed;
+        background-size: cover;
+        color: #f7d36a;
+        text-shadow: 2px 2px 4px #000;
     }
 
-    .app {
-      width: 100%;
-      max-width: 980px;
-      background: linear-gradient(145deg, #070a12, #0d1221);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(0, 216, 255, 0.18);
-      padding: 22px 22px 26px;
+    .container {
+        background: rgba(0, 0, 0, 0.75);
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 25px;
+        border: 2px solid #ff9900;
+        border-radius: 10px;
     }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 20px;
-      align-items: center;
-    }
-
-    .title-block h1 {
-      font-size: 1.4rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .title-block p {
-      font-size: 0.85rem;
-      color: var(--text-soft);
-      margin-top: 4px;
-    }
-
-    .ship-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-size: 0.75rem;
-      justify-content: flex-end;
-    }
-
-    .badge {
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(9, 14, 30, 0.9);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-
-    .badge span.icon {
-      font-size: 0.9rem;
-    }
-
-    .badge.reclaimer {
-      border-color: rgba(255, 75, 92, 0.7);
-      background: radial-gradient(circle at top, rgba(255, 75, 92, 0.2), transparent);
-    }
-
-    .badge.light {
-      border-color: rgba(0, 216, 255, 0.6);
-      background: radial-gradient(circle at top, rgba(0, 216, 255, 0.18), transparent);
+    h1 {
+        font-size: 34px;
+        text-align: center;
+        color: #ffcc33;
     }
 
     .grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
     }
 
-    .panel {
-      background: var(--bg-panel);
-      border-radius: var(--radius);
-      padding: 14px 16px 16px;
-      border: 1px solid var(--border);
+    .box {
+        background: rgba(20, 20, 20, 0.85);
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #ffaa33;
     }
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 10px;
+    label {
+        font-size: 18px;
+        display: block;
+        margin-top: 10px;
     }
 
-    .panel-title {
-      font-size: 0.95rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-soft);
-    }
-
-    .panel-sub {
-      font-size: 0.75rem;
-      color: var(--accent);
-      opacity: 0.8;
-    }
-
-    .inputs {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-      margin-bottom: 4px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .field label {
-      font-size: 0.75rem;
-      color: var(--text-soft);
-    }
-
-    .field input {
-      background: #151b2d;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      padding: 6px 9px;
-      color: var(--text);
-      font-size: 0.85rem;
-      outline: none;
-      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-
-    .field input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(0, 216, 255, 0.45);
-      background: #151b30;
-    }
-
-    .field small {
-      font-size: 0.7rem;
-      color: var(--text-soft);
-      opacity: 0.75;
-    }
-
-    .note {
-      font-size: 0.7rem;
-      color: var(--text-soft);
-      margin-top: 6px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: rgba(8, 13, 30, 0.9);
-      border: 1px dashed rgba(61, 78, 121, 0.8);
-    }
-
-    .note strong {
-      color: var(--accent);
-    }
-
-    .results-panel {
-      background: var(--bg-panel-soft);
-      border-radius: var(--radius);
-      padding: 10px 12px 12px;
-      border: 1px solid var(--border);
-      margin-top: 4px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-
-    th, td {
-      padding: 6px 5px;
-      text-align: right;
-      border-bottom: 1px solid rgba(42, 52, 86, 0.7);
-    }
-
-    th:first-child,
-    td:first-child {
-      text-align: left;
-    }
-
-    thead tr {
-      background: rgba(7, 12, 30, 0.9);
-    }
-
-    th {
-      font-weight: 500;
-      color: var(--text-soft);
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .col-header {
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--accent);
-    }
-
-    .tag {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(7, 10, 20, 0.9);
-      color: var(--text-soft);
-      display: inline-block;
-    }
-
-    .tag.reclaimer {
-      border-color: rgba(255, 75, 92, 0.6);
-      color: #ff9da7;
-    }
-
-    .tag.light {
-      border-color: rgba(0, 216, 255, 0.7);
-      color: #7ee9ff;
-    }
-
-    .value-good {
-      color: #8dffb2;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .value-warn {
-      color: #ffd76b;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .value-bad {
-      color: var(--danger);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .footer-note {
-      margin-top: 10px;
-      font-size: 0.7rem;
-      color: var(--text-soft);
-      text-align: right;
-      opacity: 0.85;
-    }
-
-    .footer-note a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    @media (max-width: 760px) {
-      body {
+    input {
+        width: 100%;
         padding: 10px;
-      }
-      .app {
-        padding: 14px 12px 16px;
-        border-radius: 20px;
-      }
-      .header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .ship-badges {
-        justify-content: flex-start;
-      }
-      .grid {
-        grid-template-columns: 1fr;
-      }
+        font-size: 18px;
+        margin-top: 5px;
+        border-radius: 6px;
+        border: 1px solid #ffaa33;
+        background: #222;
+        color: #ffdd88;
     }
-  </style>
+
+    .result {
+        font-size: 20px;
+        margin-top: 15px;
+        background: rgba(255,165,0,0.15);
+        padding: 10px;
+        border-radius: 8px;
+    }
+</style>
 </head>
+
 <body>
-<div class="app">
-  <div class="header">
-    <div class="title-block">
-      <h1>SALVAGE 4.4 – CALCUL CMAT</h1>
-      <p>Estime tes gains à partir de <strong>Construction Salvage</strong> pour CMAT brut / raffiné.</p>
-    </div>
-    <div class="ship-badges">
-      <div class="badge light">
-        <span class="icon">🟡</span>
-        <span>Salvation / Vulture / Fortune</span>
-      </div>
-      <div class="badge reclaimer">
-        <span class="icon">🟢</span>
-        <span>Reclaimer – Heavy Salvage</span>
-      </div>
-    </div>
-  </div>
+<div class="container">
+    <h1>SALVAGE 4.4 – CALCUL CMAT</h1>
 
-  <div class="grid">
-    <!-- COLONNE GAUCHE : INPUTS -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Entrées</div>
-        <div class="panel-sub">Construction Salvage → Construction Materials</div>
-      </div>
+    <div class="grid">
+        <!-- COLONNE GAUCHE -->
+        <div class="box">
+            <h2>Entrées</h2>
 
-      <div class="inputs">
-        <div class="field">
-          <label>Prix CMAT brut (aUEC / SCU)</label>
-          <input id="prixBrut" type="number" step="0.01" value="8000" />
-          <small>Copie le prix de <strong>Construction Materials</strong> sur UEX.</small>
+            <label>SCU Construction Salvage (Salvation / Vulture / Fortune)</label>
+            <input id="scu_light" type="number" value="160">
+
+            <label>SCU Construction Salvage (Reclaimer)</label>
+            <input id="scu_reclaimer" type="number" value="320">
+
+            <label>Prix CMAT brut (via UEX)</label>
+            <input id="price_raw" type="number" value="0">
+
+            <label>Prix CMAT raffiné (via UEX)</label>
+            <input id="price_refined" type="number" value="0">
+
+            <button onclick="calculate()" style="
+                margin-top:20px;padding:10px 20px;
+                background:#ffaa00;color:#000;font-size:20px;
+                border-radius:6px;cursor:pointer;">
+                Calculer
+            </button>
         </div>
-        <div class="field">
-          <label>Prix CMAT raffiné (aUEC / SCU)</label>
-          <input id="prixRaffine" type="number" step="0.01" value="9000" />
-          <small>Si tu raffines / craftes avant de vendre.</small>
-        </div>
-      </div>
 
-      <div class="inputs" style="margin-top:10px;">
-        <div class="field">
-          <label>SCU de Construction Salvage<br><small>Salvation / Vulture / Fortune (run)</small></label>
-          <input id="scuLight" type="number" step="0.01" value="160" />
-          <small>Ex : 10 caisses de 16 SCU → 160.</small>
-        </div>
-        <div class="field">
-          <label>SCU de Construction Salvage<br><small>Reclaimer (run)</small></label>
-          <input id="scuReclaimer" type="number" step="0.01" value="320" />
-          <small>Ex : 20 caisses de 16 SCU → 320.</small>
-        </div>
-      </div>
+        <!-- COLONNE DROITE -->
+        <div class="box">
+            <h2>Résultats estimés</h2>
 
-      <div class="note">
-        <strong>Rendements utilisés :</strong><br />
-        • Salvation / Vulture / Fortune : <strong>30&nbsp;%</strong> (conversion Salvage → CMAT)<br />
-        • Reclaimer : <strong>15&nbsp;%</strong> (grosse perte, mais énorme volume) <br />
-        ➜ À ajuster si CIG modifie les ratios en 4.4+.
-      </div>
+            <div class="result" id="result_light">
+                Salvation / Vulture / Fortune :
+                <br>Non raffiné : ...
+                <br>Raffiné : ...
+            </div>
+
+            <div class="result" id="result_reclaimer">
+                Reclaimer :
+                <br>Non raffiné : ...
+                <br>Raffiné : ...
+            </div>
+        </div>
     </div>
-
-    <!-- COLONNE DROITE : RÉSULTATS -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Résultats estimés</div>
-        <div class="panel-sub">Colonne gauche : non raffiné · droite : raffiné</div>
-      </div>
-
-      <div class="results-panel">
-        <table>
-          <thead>
-          <tr>
-            <th></th>
-            <th class="col-header">Non raffiné<br /><span style="font-size:0.7rem;">(SCU × prix brut)</span></th>
-            <th class="col-header">Raffiné<br /><span style="font-size:0.7rem;">(SCU × prix raffiné)</span></th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr>
-            <td>
-              <span class="tag light">Salvation / Vulture / Fortune – 30%</span>
-            </td>
-            <td>
-              <div>SCU : <span id="lightBrutScu" class="value-good">0</span></div>
-              <div>Valeur : <span id="lightBrutVal" class="value-good">0 aUEC</span></div>
-            </td>
-            <td>
-              <div>SCU CMAT : <span id="lightRafScu" class="value-warn">0</span></div>
-              <div>Valeur : <span id="lightRafVal" class="value-warn">0 aUEC</span></div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <span class="tag reclaimer">Reclaimer – 15%</span>
-            </td>
-            <td>
-              <div>SCU : <span id="recBrutScu" class="value-good">0</span></div>
-              <div>Valeur : <span id="recBrutVal" class="value-good">0 aUEC</span></div>
-            </td>
-            <td>
-              <div>SCU CMAT : <span id="recRafScu" class="value-bad">0</span></div>
-              <div>Valeur : <span id="recRafVal" class="value-bad">0 aUEC</span></div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="note">
-        💡 <strong>Lecture rapide :</strong> <br />
-        • <strong>Non raffiné</strong> = tu valorises ton Salvage comme s’il était converti 1:1 en CMAT au prix brut.<br />
-        • <strong>Raffiné</strong> = tu appliques un rendement (30&nbsp;% / 15&nbsp;%) puis le prix raffiné.<br />
-        ➜ Compare les 2 pour voir si ça vaut le coup de raffiner.
-      </div>
-    </div>
-  </div>
-
-  <div class="footer-note">
-    Données de prix : à récupérer sur <a href="https://uexcorp.space" target="_blank">UEX</a> (communauté Star Citizen).
-  </div>
 </div>
 
 <script>
-  function parseFloatOrZero(v) {
-    const n = parseFloat(v.replace(",", "."));
-    return isNaN(n) ? 0 : n;
-  }
+// -----------------------------------------------
+// 🔑 PLACE TA CLÉ API UEX ICI :
+const API_KEY = "METTRE_TA_CLE_ICI";
+// -----------------------------------------------
 
-  function formatNumber(n) {
-    return n.toLocaleString("fr-FR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
+// --- Récupérer les prix UEX automatiquement ---
+async function loadUEXPrices() {
+    try {
+        const req = await fetch(
+            "https://api.uexcorp.space/v2/items/prices",
+            { headers: { "Authorization": "Bearer " + API_KEY } }
+        );
 
-  function updateCalc() {
-    const prixBrut = parseFloatOrZero(document.getElementById("prixBrut").value);
-    const prixRaffine = parseFloatOrZero(document.getElementById("prixRaffine").value);
-    const scuLight = parseFloatOrZero(document.getElementById("scuLight").value);
-    const scuReclaimer = parseFloatOrZero(document.getElementById("scuReclaimer").value);
+        const data = await req.json();
 
-    const rendementLight = 0.30;   // 30 %
-    const rendementReclaimer = 0.15; // 15 %
+        // Cherche Construction Material
+        const cmat = data.data.find(i => i.name.toLowerCase().includes("construction material"));
 
-    // LIGHT SHIPS
-    const lightBrutScu = scuLight;
-    const lightBrutVal = lightBrutScu * prixBrut;
-    const lightRafScu = scuLight * rendementLight;
-    const lightRafVal = lightRafScu * prixRaffine;
+        if (cmat) {
+            document.getElementById("price_raw").value = cmat.price_sell;
+            document.getElementById("price_refined").value = cmat.price_buy;
+        }
+    } catch (err) {
+        console.error("Erreur API UEX :", err);
+    }
+}
 
-    document.getElementById("lightBrutScu").textContent = formatNumber(lightBrutScu);
-    document.getElementById("lightBrutVal").textContent = formatNumber(lightBrutVal) + " aUEC";
-    document.getElementById("lightRafScu").textContent = formatNumber(lightRafScu);
-    document.getElementById("lightRafVal").textContent = formatNumber(lightRafVal) + " aUEC";
+loadUEXPrices();
 
-    // RECLAIMER
-    const recBrutScu = scuReclaimer;
-    const recBrutVal = recBrutScu * prixBrut;
-    const recRafScu = scuReclaimer * rendementReclaimer;
-    const recRafVal = recRafScu * prixRaffine;
+// --- Calcul salvage ---
+function calculate() {
 
-    document.getElementById("recBrutScu").textContent = formatNumber(recBrutScu);
-    document.getElementById("recBrutVal").textContent = formatNumber(recBrutVal) + " aUEC";
-    document.getElementById("recRafScu").textContent = formatNumber(recRafScu);
-    document.getElementById("recRafVal").textContent = formatNumber(recRafVal) + " aUEC";
-  }
+    const lightSCU = Number(document.getElementById("scu_light").value);
+    const recSCU = Number(document.getElementById("scu_reclaimer").value);
+    const priceRaw = Number(document.getElementById("price_raw").value);
+    const priceRef = Number(document.getElementById("price_refined").value);
 
-  ["prixBrut", "prixRaffine", "scuLight", "scuReclaimer"].forEach(id => {
-    document.getElementById(id).addEventListener("input", updateCalc);
-  });
+    // Rendements salvage
+    const lightRate = 0.30;    // Salvation / Vulture / Fortune
+    const recRate = 0.15;      // Reclaimer (mass losses)
 
-  updateCalc();
+    const lightRaw = lightSCU * priceRaw;
+    const lightRef = (lightSCU * lightRate) * priceRef;
+
+    const recRaw = recSCU * priceRaw;
+    const recRef = (recSCU * recRate) * priceRef;
+
+    document.getElementById("result_light").innerHTML =
+        `Salvation / Vulture / Fortune :
+        <br><b>Non raffiné :</b> ${lightRaw.toLocaleString()} aUEC
+        <br><b>Raffiné :</b> ${lightRef.toLocaleString()} aUEC`;
+
+    document.getElementById("result_reclaimer").innerHTML =
+        `Reclaimer :
+        <br><b>Non raffiné :</b> ${recRaw.toLocaleString()} aUEC
+        <br><b>Raffiné :</b> ${recRef.toLocaleString()} aUEC`;
+}
 </script>
+
 </body>
 </html>
