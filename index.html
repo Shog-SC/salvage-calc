@@ -195,4 +195,366 @@
       font-size: 13px;
       line-height: 1.4;
       white-space: pre-line;
-      marg
+      margin-bottom: 4px;
+    }
+
+    .decision {
+      margin-top: 4px;
+      padding: 7px 9px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .decision.good {
+      background: #082d12;
+      border-left: 4px solid #00ff66;
+      color: #adffbf;
+    }
+    .decision.bad {
+      background: #3a0707;
+      border-left: 4px solid #ff4444;
+      color: #ffb3b3;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="overlay">
+  <div class="container">
+    <h1>SALVAGE CALCULATOR 4.4</h1>
+    <div class="sub">
+      Compare la rentabilité entre <b>vendre ton salvage en RMC</b> ou <b>le transformer en CMAT</b>.
+    </div>
+
+    <div class="grid">
+      <!-- ======================= COLONNE GAUCHE ======================= -->
+      <div class="panel">
+        <div class="panel-title">Entrées</div>
+
+        <label for="prixRmc">Prix RMC (aUEC / SCU)</label>
+        <input id="prixRmc" type="number" value="0" readonly />
+        <div class="hint">RMC = Recycled Material Composite (issu du hull scraping).</div>
+
+        <label for="prixCmat">Prix CMAT (aUEC / SCU)</label>
+        <input id="prixCmat" type="number" value="0" readonly />
+        <div class="hint">CMAT = Construction Materials (issu du Construction Salvage).</div>
+
+        <label for="scuLight">
+          SCU de salvage traitées – Salvation / Vulture / Fortune
+          <span style="font-weight: normal;">(loop RMC vs CMAT, rendement 30% pour CMAT)</span>
+        </label>
+        <input id="scuLight" type="number" value="0" />
+
+        <label for="scuReclaimer">
+          SCU de salvage traitées – Reclaimer
+          <span style="font-weight: normal;">(loop RMC vs CMAT, rendement 15% pour CMAT)</span>
+        </label>
+        <input id="scuReclaimer" type="number" value="0" />
+
+        <div class="tag-row">
+          <div class="tag">Loop CMAT (Vulture / Salvation / Fortune) : 30% de conversion en CMAT</div>
+          <div class="tag red">Loop CMAT (Reclaimer) : 15% de conversion en CMAT</div>
+        </div>
+
+        <div class="small-note">
+          Pour chaque valeur de SCU, l'outil compare :
+          <br>- vendre tout en RMC
+          <br>- transformer en CMAT (Construction Salvage → CMAT).
+        </div>
+        <div id="apiStatus" class="api-status">Récupération des prix UEX…</div>
+      </div>
+
+      <!-- ======================= COLONNE DROITE ======================= -->
+      <div>
+        <!-- PANEL GRAPHIQUE -->
+        <div class="graph-panel">
+          <div class="graph-title">Historique des prix RMC &amp; CMAT (dernières valeurs)</div>
+          <canvas id="cmatChart" height="120"></canvas>
+          <div id="graphMessage"></div>
+        </div>
+
+        <!-- PANEL RÉSULTATS RMC -->
+        <div class="panel">
+          <div class="panel-title">Loop RMC – Vendre en Recycled Material Composite</div>
+
+          <div class="result-block">
+            <div class="result-head">Salvation / Vulture / Fortune (30 % pour CMAT)</div>
+            <div class="result-values" id="rmcLightValues"></div>
+            <div class="decision" id="rmcLightDecision"></div>
+          </div>
+
+          <div class="result-block">
+            <div class="result-head">Reclaimer (15 % pour CMAT)</div>
+            <div class="result-values" id="rmcRecValues"></div>
+            <div class="decision" id="rmcRecDecision"></div>
+          </div>
+        </div>
+
+        <!-- PANEL RÉSULTATS CMAT -->
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-title">Loop CMAT – Transformer en Construction Materials</div>
+
+          <div class="result-block">
+            <div class="result-head">Salvation / Vulture / Fortune (30 % de conversion)</div>
+            <div class="result-values" id="cmatLightValues"></div>
+            <div class="decision" id="cmatLightDecision"></div>
+          </div>
+
+          <div class="result-block">
+            <div class="result-head">Reclaimer (15 % de conversion)</div>
+            <div class="result-values" id="cmatRecValues"></div>
+            <div class="decision" id="cmatRecDecision"></div>
+          </div>
+        </div>
+
+      </div> <!-- Fin colonne droite -->
+    </div> <!-- Fin grid -->
+  </div> <!-- Fin container -->
+</div> <!-- Fin overlay -->
+
+<!-- ======================= SCRIPTS ======================= -->
+<script>
+/* ============================================================
+   RENDREMENTS CMAT
+   (part de tes SCU de salvage qui se transforment en CMAT)
+============================================================ */
+const REND_LIGHT = 0.30;      // Vulture / Salvation / Fortune
+const REND_RECLAIMER = 0.15;  // Reclaimer
+
+/* ============================================================
+   RÉFÉRENCES DOM
+============================================================ */
+const prixRmcInput  = document.getElementById("prixRmc");
+const prixCmatInput = document.getElementById("prixCmat");
+
+const scuLightInput = document.getElementById("scuLight");
+const scuRecInput   = document.getElementById("scuReclaimer");
+
+const apiStatusEl   = document.getElementById("apiStatus");
+
+const rmcLightValuesEl = document.getElementById("rmcLightValues");
+const rmcLightDecisionEl = document.getElementById("rmcLightDecision");
+const rmcRecValuesEl = document.getElementById("rmcRecValues");
+const rmcRecDecisionEl = document.getElementById("rmcRecDecision");
+
+const cmatLightValuesEl = document.getElementById("cmatLightValues");
+const cmatLightDecisionEl = document.getElementById("cmatLightDecision");
+const cmatRecValuesEl = document.getElementById("cmatRecValues");
+const cmatRecDecisionEl = document.getElementById("cmatRecDecision");
+
+const graphMessage  = document.getElementById("graphMessage");
+const chartCanvas   = document.getElementById("cmatChart");
+
+/* ============================================================
+   INITIALISATION SCU À 0
+============================================================ */
+window.addEventListener("load", () => {
+  scuLightInput.value = 0;
+  scuRecInput.value = 0;
+});
+
+/* ============================================================
+   FORMATAGE DE NOMBRE
+============================================================ */
+function format(val) {
+  if (isNaN(val)) return "0";
+  return val.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
+}
+
+/* ============================================================
+   COMPARAISON LOOP RMC vs LOOP CMAT
+============================================================ */
+function updateComparison(rmcValue, cmatValue, rmcDecEl, cmatDecEl) {
+  const diff = Math.abs(cmatValue - rmcValue);
+  const diffStr = format(diff) + " aUEC";
+
+  if (rmcValue === 0 && cmatValue === 0) {
+    rmcDecEl.textContent = "";
+    cmatDecEl.textContent = "";
+    rmcDecEl.className = "decision";
+    cmatDecEl.className = "decision";
+    return;
+  }
+
+  if (cmatValue > rmcValue) {
+    const text = `🟢 Loop CMAT (Construction Materials) plus rentable que RMC (+${diffStr}).`;
+    rmcDecEl.textContent = text;
+    cmatDecEl.textContent = text;
+    rmcDecEl.className = "decision bad";
+    cmatDecEl.className = "decision good";
+  } else if (rmcValue > cmatValue) {
+    const text = `🟢 Loop RMC plus rentable que CMAT (+${diffStr}).`;
+    rmcDecEl.textContent = text;
+    cmatDecEl.textContent = text;
+    rmcDecEl.className = "decision good";
+    cmatDecEl.className = "decision bad";
+  } else {
+    const text = "ℹ Les deux loops rapportent la même chose.";
+    rmcDecEl.textContent = text;
+    cmatDecEl.textContent = text;
+    rmcDecEl.className = "decision";
+    cmatDecEl.className = "decision";
+  }
+}
+
+/* ============================================================
+   CALCULS
+   - Pour un même nombre de SCU de salvage :
+     -> valeur si tu vends tout en RMC
+     -> valeur si tu transformes en CMAT (avec rendement)
+============================================================ */
+function recalc() {
+  const prixRMC  = Number(prixRmcInput.value)  || 0;
+  const prixCMAT = Number(prixCmatInput.value) || 0;
+
+  const sl = Number(scuLightInput.value) || 0;
+  const sr = Number(scuRecInput.value)   || 0;
+
+  /* ----- LIGHT SHIPS (30% pour CMAT) ----- */
+
+  // Loop RMC : tu vends tout ton salvage en RMC
+  const rmcLightVal = sl * prixRMC;
+
+  rmcLightValuesEl.textContent =
+    `SCU de salvage utilisées : ${format(sl)} SCU\n` +
+    `Valeur si tu vends tout en RMC : ${format(rmcLightVal)} aUEC`;
+
+  // Loop CMAT : tu pousses le salvage jusqu'au Construction Salvage → CMAT
+  const cmatLightScu = sl * REND_LIGHT;        // SCU finales de CMAT
+  const cmatLightVal = cmatLightScu * prixCMAT;
+
+  cmatLightValuesEl.textContent =
+    `SCU de salvage converties en CMAT (rendement 30 %) : ${format(cmatLightScu)} SCU\n` +
+    `Valeur si tu vends en CMAT : ${format(cmatLightVal)} aUEC`;
+
+  // Décision pour les light ships
+  updateComparison(rmcLightVal, cmatLightVal, rmcLightDecisionEl, cmatLightDecisionEl);
+
+  /* ----- RECLAIMER (15% pour CMAT) ----- */
+
+  const rmcRecVal = sr * prixRMC;
+
+  rmcRecValuesEl.textContent =
+    `SCU de salvage utilisées : ${format(sr)} SCU\n` +
+    `Valeur si tu vends tout en RMC : ${format(rmcRecVal)} aUEC`;
+
+  const cmatRecScu = sr * REND_RECLAIMER;
+  const cmatRecVal = cmatRecScu * prixCMAT;
+
+  cmatRecValuesEl.textContent =
+    `SCU de salvage converties en CMAT (rendement 15 %) : ${format(cmatRecScu)} SCU\n` +
+    `Valeur si tu vends en CMAT : ${format(cmatRecVal)} aUEC`;
+
+  updateComparison(rmcRecVal, cmatRecVal, rmcRecDecisionEl, cmatRecDecisionEl);
+}
+
+/* ============================================================
+   EVENTS DE RECALCUL
+============================================================ */
+[
+  scuLightInput,
+  scuRecInput
+].forEach(el => el.addEventListener("input", recalc));
+
+/* ============================================================
+   GRAPHIQUE DOUBLE COURBE
+============================================================ */
+let cmatChart = null;
+
+function renderChart(rmcHist, cmatHist) {
+  const rmcLabels  = rmcHist.map((e, i) => `RMC #${i + 1}`);
+  const rmcValues  = rmcHist.map(e => e.sell);
+
+  const cmatLabels = cmatHist.map((e, i) => `CMAT #${i + 1}`);
+  const cmatValues = cmatHist.map(e => e.sell);
+
+  if (cmatChart) cmatChart.destroy();
+
+  const labels = cmatLabels.length > rmcLabels.length ? cmatLabels : rmcLabels;
+
+  cmatChart = new Chart(chartCanvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "CMAT (aUEC)",
+          data: cmatValues,
+          borderWidth: 2,
+          borderColor: "#ffb000",
+          backgroundColor: "rgba(255,176,0,0.20)"
+        },
+        {
+          label: "RMC (aUEC)",
+          data: rmcValues,
+          borderWidth: 2,
+          borderColor: "#00e5ff",
+          backgroundColor: "rgba(0,229,255,0.20)"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: "#fff" }}},
+      scales: {
+        x: { ticks: { color: "#ffb000" }},
+        y: { ticks: { color: "#ffb000" }}
+      }
+    }
+  });
+}
+
+/* ============================================================
+   RÉCUPÉRATION DES DONNÉES UEX VIA TON WORKER
+============================================================ */
+async function fetchUexPrices() {
+  try {
+    apiStatusEl.textContent = "Récupération des prix UEX…";
+
+    const url = "https://salvage-uex-proxy.yoyoastico74.workers.dev/";
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error("Worker non accessible");
+
+    const data = await res.json();
+
+    prixRmcInput.value  = data.rmc.price  ?? 0;
+    prixCmatInput.value = data.cmat.price ?? 0;
+
+    const rmcHist  = data.rmc.history  ?? [];
+    const cmatHist = data.cmat.history ?? [];
+
+    if (!rmcHist.length && !cmatHist.length) {
+      graphMessage.textContent = "Aucune donnée historique disponible.";
+    } else {
+      graphMessage.textContent = "";
+      renderChart(rmcHist, cmatHist);
+    }
+
+    apiStatusEl.textContent =
+      `Prix mis à jour (RMC: ${data.rmc.bestTerminal.name} / CMAT: ${data.cmat.bestTerminal.name}).`;
+
+    recalc();
+
+  } catch (err) {
+    apiStatusEl.textContent = "Erreur API : " + err.message;
+    apiStatusEl.classList.add("error");
+    graphMessage.textContent = "Impossible de charger l'historique.";
+  }
+}
+
+/* ============================================================
+   LANCEMENT
+============================================================ */
+fetchUexPrices();
+recalc();
+</script>
+
+</body>
+</html>
