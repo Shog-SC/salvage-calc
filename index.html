@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.1 -->
+<!-- Version : V5.1.1 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1377,7 +1377,7 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.1";
+const APP_VERSION = "V5.1.1";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -1932,9 +1932,6 @@ async function pushRunToOnlineLeaderboard(run) {
     updateLocalLeaderboard(true);
   } catch (err) {
     console.error("pushRunToOnlineLeaderboard error:", err);
-  }
-}
-lineLeaderboard error:", err);
   }
 }
 
