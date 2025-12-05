@@ -255,29 +255,29 @@
 
         <label for="prixCmat">Prix CMAT (aUEC / SCU)</label>
         <input id="prixCmat" type="number" value="0" readonly />
-        <div class="hint">CMAT = Construction Materials (issu du Construction Salvage).</div>
+        <div class="hint">CMAT = Construction Materials (issu du Construction Salvage, Reclaimer uniquement).</div>
 
         <label for="scuLight">
           SCU de salvage traitées – Salvation / Vulture / Fortune
-          <span style="font-weight: normal;">(loop RMC vs CMAT, 30% de conversion en CMAT)</span>
+          <span style="font-weight: normal;">(ces vaisseaux ne produisent que du RMC)</span>
         </label>
         <input id="scuLight" type="number" value="0" />
 
         <label for="scuReclaimer">
           SCU de salvage traitées – Reclaimer
-          <span style="font-weight: normal;">(loop RMC vs CMAT, 15% de conversion en CMAT)</span>
+          <span style="font-weight: normal;">(peut vendre en RMC ou produire du CMAT ~15 %)</span>
         </label>
         <input id="scuReclaimer" type="number" value="0" />
 
         <div class="tag-row">
-          <div class="tag">Loop CMAT (Vulture / Salvation / Fortune) : ~30% → CMAT</div>
-          <div class="tag red">Loop CMAT (Reclaimer) : ~15% → CMAT</div>
+          <div class="tag">Vaisseaux légers : hull scraping → RMC uniquement</div>
+          <div class="tag red">Reclaimer : hull + structural salvage → RMC + CMAT (~15% → CMAT)</div>
         </div>
 
         <div class="small-note">
-          Pour chaque SCU saisie, l'outil compare :
-          <br>- vendre tout en RMC
-          <br>- transformer en CMAT (Construction Salvage → CMAT).
+          Pour chaque SCU saisie :
+          <br>- Light ships : seul le RMC varie (pas de CMAT)
+          <br>- Reclaimer : comparaison RMC vs CMAT.
         </div>
         <div id="apiStatus" class="api-status">Récupération des prix UEX…</div>
       </div>
@@ -289,13 +289,13 @@
           <div class="panel-title">Loop RMC – Vendre en Recycled Material Composite</div>
 
           <div class="result-block">
-            <div class="result-head">Salvation / Vulture / Fortune (30 % pour CMAT)</div>
+            <div class="result-head">Salvation / Vulture / Fortune (RMC uniquement)</div>
             <div class="result-values" id="rmcLightValues"></div>
             <div class="decision" id="rmcLightDecision"></div>
           </div>
 
           <div class="result-block">
-            <div class="result-head">Reclaimer (15 % pour CMAT)</div>
+            <div class="result-head">Reclaimer (peut choisir RMC ou CMAT)</div>
             <div class="result-values" id="rmcRecValues"></div>
             <div class="decision" id="rmcRecDecision"></div>
           </div>
@@ -306,13 +306,13 @@
           <div class="panel-title">Loop CMAT – Transformer en Construction Materials</div>
 
           <div class="result-block">
-            <div class="result-head">Salvation / Vulture / Fortune (30 % de conversion)</div>
+            <div class="result-head">Salvation / Vulture / Fortune</div>
             <div class="result-values" id="cmatLightValues"></div>
             <div class="decision" id="cmatLightDecision"></div>
           </div>
 
           <div class="result-block">
-            <div class="result-head">Reclaimer (15 % de conversion)</div>
+            <div class="result-head">Reclaimer (15 % de conversion en CMAT)</div>
             <div class="result-values" id="cmatRecValues"></div>
             <div class="decision" id="cmatRecDecision"></div>
           </div>
@@ -336,9 +336,8 @@
 <!-- ======================= SCRIPTS ======================= -->
 <script>
 /* ============================================================
-   RENDREMENTS CMAT (part des SCU salvage converties en CMAT)
+   RENDREMENTS CMAT (Reclaimer uniquement)
 ============================================================ */
-const REND_LIGHT = 0.30;      // Vulture / Salvation / Fortune
 const REND_RECLAIMER = 0.15;  // Reclaimer
 
 /* ============================================================
@@ -382,7 +381,7 @@ function format(val) {
 }
 
 /* ============================================================
-   COMPARAISON LOOP RMC vs LOOP CMAT
+   COMPARAISON LOOP RMC vs LOOP CMAT (Reclaimer)
 ============================================================ */
 function updateComparison(rmcValue, cmatValue, rmcDecEl, cmatDecEl) {
   const diff = Math.abs(cmatValue - rmcValue);
@@ -419,9 +418,6 @@ function updateComparison(rmcValue, cmatValue, rmcDecEl, cmatDecEl) {
 
 /* ============================================================
    CALCULS
-   - Pour un même nombre de SCU de salvage :
-     -> valeur si tu vends tout en RMC
-     -> valeur si tu transformes en CMAT (avec rendement)
 ============================================================ */
 function recalc() {
   const prixRMC  = Number(prixRmcInput.value)  || 0;
@@ -430,27 +426,29 @@ function recalc() {
   const sl = Number(scuLightInput.value) || 0;
   const sr = Number(scuRecInput.value)   || 0;
 
-  /* ----- LIGHT SHIPS (30% pour CMAT) ----- */
+  /* ----- LIGHT SHIPS (RMC uniquement) ----- */
 
-  // Loop RMC : tu vends tout ton salvage en RMC
   const rmcLightVal = sl * prixRMC;
 
   rmcLightValuesEl.textContent =
     `SCU de salvage utilisées : ${format(sl)} SCU\n` +
     `Valeur si tu vends tout en RMC : ${format(rmcLightVal)} aUEC`;
 
-  // Loop CMAT : tu pousses le salvage jusqu'au Construction Salvage → CMAT
-  const cmatLightScu = sl * REND_LIGHT;        // SCU finales de CMAT
-  const cmatLightVal = cmatLightScu * prixCMAT;
+  if (sl > 0) {
+    rmcLightDecisionEl.textContent =
+      "ℹ Les vaisseaux légers (Vulture / Salvation / Fortune) ne produisent que du RMC, pas de CMAT.";
+  } else {
+    rmcLightDecisionEl.textContent = "";
+  }
+  rmcLightDecisionEl.className = "decision";
 
   cmatLightValuesEl.textContent =
-    `SCU de salvage converties en CMAT (rendement 30 %) : ${format(cmatLightScu)} SCU\n` +
-    `Valeur si tu vends en CMAT : ${format(cmatLightVal)} aUEC`;
+    "Les vaisseaux légers ne génèrent pas de Construction Materials (CMAT).\n" +
+    "Seul le Reclaimer (et futurs heavy salvage) peuvent produire du CMAT.";
+  cmatLightDecisionEl.textContent = "";
+  cmatLightDecisionEl.className = "decision";
 
-  // Décision pour les light ships
-  updateComparison(rmcLightVal, cmatLightVal, rmcLightDecisionEl, cmatLightDecisionEl);
-
-  /* ----- RECLAIMER (15% pour CMAT) ----- */
+  /* ----- RECLAIMER : RMC vs CMAT ----- */
 
   const rmcRecVal = sr * prixRMC;
 
@@ -465,7 +463,6 @@ function recalc() {
     `SCU de salvage converties en CMAT (rendement 15 %) : ${format(cmatRecScu)} SCU\n` +
     `Valeur si tu vends en CMAT : ${format(cmatRecVal)} aUEC`;
 
-  // Décision pour le Reclaimer
   updateComparison(rmcRecVal, cmatRecVal, rmcRecDecisionEl, cmatRecDecisionEl);
 }
 
@@ -483,7 +480,6 @@ function recalc() {
 let cmatChart = null;
 
 function renderChart(rmcHist, cmatHist) {
-  // On part du principe que les tableaux sont déjà ordonnés (ancien -> récent).
   const maxLen = Math.max(rmcHist.length, cmatHist.length);
 
   const labels = [];
@@ -494,7 +490,6 @@ function renderChart(rmcHist, cmatHist) {
     const rEntry = rmcHist[i] || null;
     const cEntry = cmatHist[i] || null;
 
-    // Choisir une source pour la date : CMAT en priorité, sinon RMC
     const src = cEntry || rEntry;
 
     if (src && src.date) {
