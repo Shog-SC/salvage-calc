@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V4.7.4 -->
+<!-- Version : V4.7.5 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -318,8 +318,10 @@ body.theme-light {
     }
 
     input[type="number"] {
-      width: 100%;
+      width: calc(100% - 8px);
       margin-top: 4px;
+      margin-left: 4px;
+      margin-right: 4px;
       padding: 8px 10px;
       border-radius: 6px;
       border: 2px solid var(--accent);
@@ -351,7 +353,9 @@ body.theme-light {
     }
 
     .panel select {
-      width: 100%;
+      width: calc(100% - 8px);
+      margin-left: 4px;
+      margin-right: 4px;
       margin-top: 4px;
       padding: 6px 10px;
       border-radius: 6px;
@@ -1113,14 +1117,7 @@ body.theme-light {
       color: var(--text-soft);
       min-height: 14px;
     }
-  
-    input[type="number"],
-    input[type="text"],
-    select {
-      margin-left: 4px;
-      margin-right: 4px;
-    }
-</style>
+  </style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -1377,7 +1374,7 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V4.7.4";
+const APP_VERSION = "V4.7.5";
 
 let currentLang = localStorage.getItem("salvageCalcLang") || "fr";
 let currentTheme = localStorage.getItem("salvageCalcTheme") || "neon";
