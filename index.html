@@ -162,6 +162,36 @@
       margin-top: 4px;
     }
 
+    .leaderboard-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .leaderboard-actions button {
+      width: 100%;
+      padding: 4px 0;
+      border-radius: 6px;
+      border: 1px solid #395d73;
+      background: #04141e;
+      color: #c4f7ff;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .leaderboard-actions button:hover {
+      border-color: #ff5b7a;
+      background: #2b0b15;
+    }
+
+    .leaderboard-action-msg {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #ffc6c6;
+      min-height: 12px;
+    }
+
     /* GRID PRINCIPALE (Entrées + Résultats) */
     .grid-main {
       display: grid;
@@ -629,7 +659,6 @@
           <option value="Salvation">Salvation</option>
           <option value="Fortune">Fortune</option>
           <option value="Reclaimer">Reclaimer</option>
-          <option value="Other">Autre / Other</option>
         </select>
 
         <button id="saveRunBtn" class="save-run-btn" type="button">
@@ -718,6 +747,12 @@
           <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
             Aucun run enregistré pour l'instant.
           </div>
+
+          <div class="leaderboard-actions">
+            <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
+            <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
+            <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -781,7 +816,7 @@ let currentLang = localStorage.getItem("salvageCalcLang") || "fr";
 const i18n = {
   fr: {
     titleMain: "SALVAGE CALCULATOR 4.4",
-    subText: "Compare la rentabilité entre <b>vendre ton salvage en RMC</b> or <b>le transformer en CMAT (Construction Materials)</b>.",
+    subText: "Compare la rentabilité entre <b>vendre ton salvage en RMC</b> ou <b>le transformer en CMAT (Construction Materials)</b>.",
     entriesTitle: "Entrées",
     labelPrixRmc: "Prix RMC (aUEC / SCU)",
     hintPrixRmc: "RMC = Recycled Material Composite (issu du hull scraping).",
@@ -831,7 +866,12 @@ const i18n = {
     saveRunBtn: "Enregistrer ce run dans le leaderboard local",
     saveRunSuccess: "Run enregistré dans ton leaderboard local.",
     saveRunNoUser: "Crée ou importe un profil avant d'enregistrer un run.",
-    saveRunNoScu: "Merci de saisir au moins une SCU de salvage avant d'enregistrer un run."
+    saveRunNoScu: "Merci de saisir au moins une SCU de salvage avant d'enregistrer un run.",
+    clearMyRunsBtn: "Supprimer mes runs",
+    clearAllRunsBtn: "Reset complet (local)",
+    clearMyRunsNoUser: "Aucun profil chargé. Crée ou importe un profil pour supprimer uniquement tes runs.",
+    clearMyRunsDone: "Tes runs ont été supprimés du leaderboard local.",
+    clearAllRunsDone: "Leaderboard local entièrement réinitialisé."
   },
   en: {
     titleMain: "SALVAGE CALCULATOR 4.4",
@@ -885,7 +925,12 @@ const i18n = {
     saveRunBtn: "Save this run to the local leaderboard",
     saveRunSuccess: "Run saved to your local leaderboard.",
     saveRunNoUser: "Please create/import a profile before saving a run.",
-    saveRunNoScu: "Please enter at least one salvage SCU before saving a run."
+    saveRunNoScu: "Please enter at least one salvage SCU before saving a run.",
+    clearMyRunsBtn: "Delete my runs",
+    clearAllRunsBtn: "Reset leaderboard (local)",
+    clearMyRunsNoUser: "No profile loaded. Create or import a profile to delete only your runs.",
+    clearMyRunsDone: "Your runs have been removed from the local leaderboard.",
+    clearAllRunsDone: "Local leaderboard fully reset."
   }
 };
 
@@ -936,6 +981,9 @@ const langSelectEl = document.getElementById("langSelect");
 /* Leaderboard local */
 const leaderboardListEl = document.getElementById("leaderboardList");
 const leaderboardEmptyEl = document.getElementById("leaderboardEmpty");
+const clearMyRunsBtnEl = document.getElementById("clearMyRunsBtn");
+const clearAllRunsBtnEl = document.getElementById("clearAllRunsBtn");
+const leaderboardActionMsgEl = document.getElementById("leaderboardActionMsg");
 
 /* Profil utilisateur (pseudo + clé) & modal */
 const userInfoEl = document.getElementById("userInfo");
@@ -1219,6 +1267,45 @@ function handleSaveRun() {
   }, 4000);
 }
 
+/* Suppression des runs */
+function clearMyRuns() {
+  const t = i18n[currentLang] || i18n.fr;
+  leaderboardActionMsgEl.textContent = "";
+
+  if (!currentUser) {
+    leaderboardActionMsgEl.textContent = t.clearMyRunsNoUser;
+    return;
+  }
+
+  let stored;
+  try {
+    stored = JSON.parse(localStorage.getItem("salvageCalcRuns") || "[]");
+  } catch (_) {
+    stored = [];
+  }
+
+  const filtered = stored.filter(r => r.userId !== currentUser.id);
+
+  try {
+    localStorage.setItem("salvageCalcRuns", JSON.stringify(filtered));
+  } catch (_) {}
+
+  updateLocalLeaderboard(null);
+  leaderboardActionMsgEl.textContent = t.clearMyRunsDone;
+}
+
+function clearAllRuns() {
+  const t = i18n[currentLang] || i18n.fr;
+  leaderboardActionMsgEl.textContent = "";
+
+  try {
+    localStorage.setItem("salvageCalcRuns", JSON.stringify([]));
+  } catch (_) {}
+
+  updateLocalLeaderboard(null);
+  leaderboardActionMsgEl.textContent = t.clearAllRunsDone;
+}
+
 /* Langue */
 function applyLanguage() {
   const t = i18n[currentLang] || i18n.fr;
@@ -1250,6 +1337,9 @@ function applyLanguage() {
   labelShipSelectEl.textContent = t.labelShipSelect;
   saveRunBtnEl.textContent = t.saveRunBtn;
   leaderboardEmptyEl.textContent = t.leaderboardEmpty;
+
+  clearMyRunsBtnEl.textContent = t.clearMyRunsBtn;
+  clearAllRunsBtnEl.textContent = t.clearAllRunsBtn;
 
   recalc();
 }
@@ -1378,6 +1468,14 @@ importProfileBtn.addEventListener("click", handleImportProfile);
 
 if (saveRunBtnEl) {
   saveRunBtnEl.addEventListener("click", handleSaveRun);
+}
+
+if (clearMyRunsBtnEl) {
+  clearMyRunsBtnEl.addEventListener("click", clearMyRuns);
+}
+
+if (clearAllRunsBtnEl) {
+  clearAllRunsBtnEl.addEventListener("click", clearAllRuns);
 }
 
 /* Chart */
