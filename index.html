@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.0.1 -->
+<!-- Version : V5.1 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1377,10 +1377,12 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.0.1";
+const APP_VERSION = "V5.1";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
+const LEADERBOARD_RUN_COOLDOWN_MS = 30000;
+let lastOnlineRunTs = Number(localStorage.getItem("salvageCalcLastOnlineRunTs") || 0);
 let lastLeaderboardFetch = 0;
 let cachedLeaderboardUsers = [];
 
@@ -1895,6 +1897,23 @@ function renderOnlineLeaderboard(users, t) {
 async function pushRunToOnlineLeaderboard(run) {
   try {
     if (!run || !run.nickname || !run.ship) return;
+
+    const now = Date.now();
+    if (LEADERBOARD_RUN_COOLDOWN_MS > 0 && lastOnlineRunTs && (now - lastOnlineRunTs) < LEADERBOARD_RUN_COOLDOWN_MS) {
+      const t = i18n[currentLang] || i18n.fr;
+      if (saveRunMessageEl) {
+        saveRunMessageEl.textContent = t.saveRunCooldown || "Tu viens d'envoyer un run. Merci d'attendre quelques secondes avant de renvoyer un nouveau run.";
+      }
+      return;
+    }
+
+    lastOnlineRunTs = now;
+    try {
+      localStorage.setItem("salvageCalcLastOnlineRunTs", String(lastOnlineRunTs));
+    } catch (e) {
+      // ignore storage errors
+    }
+
     const payload = {
       nickname: run.nickname,
       ship: run.ship,
@@ -1913,6 +1932,9 @@ async function pushRunToOnlineLeaderboard(run) {
     updateLocalLeaderboard(true);
   } catch (err) {
     console.error("pushRunToOnlineLeaderboard error:", err);
+  }
+}
+lineLeaderboard error:", err);
   }
 }
 
