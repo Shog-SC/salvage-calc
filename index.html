@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.2.1 -->
+<!-- Version : V5.2.2 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1120,6 +1120,35 @@ body.theme-light {
       color: var(--text-soft);
       min-height: 14px;
     }
+  
+    .reclaimer-flow {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px dashed rgba(0, 229, 255, 0.5);
+      background: rgba(0, 0, 0, 0.35);
+      font-size: 11px;
+      color: var(--text-soft);
+      line-height: 1.4;
+    }
+
+    .reclaimer-flow-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+      font-size: 11px;
+    }
+
+    .reclaimer-flow-steps span {
+      display: inline-block;
+      padding: 0 2px;
+    }
+
+    body.theme-light .reclaimer-flow {
+      background: #edf5ff;
+      border-color: rgba(16, 50, 67, 0.4);
+      color: #103243;
+    }
+
   </style>
 </head>
 <body class="theme-neon">
@@ -1270,6 +1299,13 @@ body.theme-light {
             <div class="result-extra" id="cmatRecExtra"></div>
             <div class="decision" id="cmatRecDecision"></div>
           </div>
+
+          <div class="reclaimer-flow">
+            <div class="reclaimer-flow-title">Schéma de la boucle Reclaimer :</div>
+            <div class="reclaimer-flow-steps">
+              <span>Reclaimer</span> → <span>Construction Salvage</span> → <span>Raffinerie</span> → <span>Construction Materials (CMAT)</span> → <span>Vente</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1377,7 +1413,7 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.2.1";
+const APP_VERSION = "V5.2.2";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
