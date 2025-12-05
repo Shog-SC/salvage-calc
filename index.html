@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V4.7.3 -->
+<!-- Version : V4.7.4 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1113,7 +1113,14 @@ body.theme-light {
       color: var(--text-soft);
       min-height: 14px;
     }
-  </style>
+  
+    input[type="number"],
+    input[type="text"],
+    select {
+      margin-left: 4px;
+      margin-right: 4px;
+    }
+</style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -1370,7 +1377,7 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V4.7.3";
+const APP_VERSION = "V4.7.4";
 
 let currentLang = localStorage.getItem("salvageCalcLang") || "fr";
 let currentTheme = localStorage.getItem("salvageCalcTheme") || "neon";
