@@ -1210,7 +1210,7 @@ body.theme-light {
         </select>
 
         <button id="saveRunBtn" class="save-run-btn" type="button">
-          Enregistrer ce run dans le leaderboard local
+          Envoyer ce run au leaderboard en ligne
         </button>
         <div id="saveRunMessage" class="small-note"></div>
 
@@ -1288,9 +1288,9 @@ body.theme-light {
 
         <div class="leaderboard-panel">
           <div class="leaderboard-title-row">
-            <div class="leaderboard-title">Leaderboard – Salvage (local)</div>
+            <div class="leaderboard-title">Leaderboard – Salvage (online)</div>
             <div class="leaderboard-badges">
-              <span class="badge-local-beta">Local Beta</span>
+              <span class="badge-local-beta">Online Beta</span>
             </div>
           </div>
           <div id="leaderboardSub" class="leaderboard-sub">
@@ -2262,6 +2262,7 @@ function applyLanguage() {
   langSwitchLabelEl.textContent = t.langSwitchLabel;
   labelShipSelectEl.textContent = t.labelShipSelect;
   leaderboardEmptyEl.textContent = t.leaderboardEmpty;
+  if (saveRunBtnEl) saveRunBtnEl.textContent = t.saveRunBtn;
   clearMyRunsBtnEl.textContent = t.clearMyRunsBtn;
   clearAllRunsBtnEl.textContent = t.clearAllRunsBtn;
 
