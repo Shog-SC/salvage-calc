@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.0 -->
+<!-- Version : V5.0.1 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1377,7 +1377,7 @@ body.theme-light {
 
 <script>
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.0";
+const APP_VERSION = "V5.0.1";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -2544,14 +2544,24 @@ async function fetchUexPrices() {
     if (!res.ok) throw new Error("Worker non accessible");
     const data = await res.json();
 
-    prixRmcInput.value  = data.rmc.price  ?? 0;
-    prixCmatInput.value = data.cmat.price ?? 0;
+    const rmcHist  = data.rmc.history  ?? [];
+    const cmatHist = data.cmat.history ?? [];
+
+    let rmcPrice  = data.rmc.price  ?? 0;
+    let cmatPrice = data.cmat.price ?? 0;
+
+    if (rmcHist.length && typeof rmcHist[rmcHist.length - 1].sell === "number") {
+      rmcPrice = rmcHist[rmcHist.length - 1].sell;
+    }
+    if (cmatHist.length && typeof cmatHist[cmatHist.length - 1].sell === "number") {
+      cmatPrice = cmatHist[cmatHist.length - 1].sell;
+    }
+
+    prixRmcInput.value  = rmcPrice;
+    prixCmatInput.value = cmatPrice;
 
     rmcTerminalEl.textContent  = data.rmc.bestTerminal?.name  ?? "N/A";
     cmatTerminalEl.textContent = data.cmat.bestTerminal?.name ?? "N/A";
-
-    const rmcHist  = data.rmc.history  ?? [];
-    const cmatHist = data.cmat.history ?? [];
 
     if (!rmcHist.length && !cmatHist.length) {
       graphMessage.textContent = t.graphNoData;
