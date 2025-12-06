@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.3.9 -->
+<!-- Version : V5.3.0 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -265,7 +265,7 @@ body.theme-light {
       border-radius: 12px;
       border: 1px solid var(--border-soft);
       background: var(--panel-bg);
-      padding: 12px 14px 16px 18px;
+      padding: 12px 12px 16px;
       box-shadow: 0 0 14px rgba(0, 0, 0, 0.7);
       position: relative;
       overflow: visible;
@@ -656,6 +656,24 @@ body.theme-light {
 
     body.theme-light .leaderboard-list li {
       border-bottom-color: #d3e3f2;
+    }
+
+    .leaderboard-rank {
+      font-weight: 600;
+      margin-right: 4px;
+      color: var(--accent-alt);
+    }
+
+    .leaderboard-line-main {
+      display: inline-block;
+      font-size: 12px;
+    }
+
+    .leaderboard-line-meta {
+      display: block;
+      font-size: 10px;
+      color: var(--text-soft);
+      margin-top: 2px;
     }
 
     .leaderboard-item-current {
@@ -1188,20 +1206,18 @@ body.theme-light {
   .mode-debutant-card {
     background: rgba(3, 10, 25, 0.9);
     border-radius: 18px;
-    padding: 1.4rem 2.47rem;
+    padding: 1rem 1.1rem;
     box-shadow: 0 0 18px rgba(0, 255, 200, 0.12);
     border: 1px solid rgba(0, 255, 200, 0.25);
-    max-width: 720px;
-    margin: 0 auto;
   }
   .mode-debutant-grid {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(230px, 1.4fr);
-    gap: 1rem 1.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1.25rem;
     align-items: center;
   }
   .mode-debutant-grid .field-label {
-    font-size: 0.80rem;
+    font-size: 0.85rem;
     opacity: 0.85;
   }
   .mode-debutant-grid .field-value {
@@ -1249,20 +1265,18 @@ body.theme-light {
   .mode-debutant-card {
     background: rgba(3, 10, 25, 0.9);
     border-radius: 18px;
-    padding: 1.4rem 2.47rem;
+    padding: 1rem 1.1rem;
     box-shadow: 0 0 18px rgba(0, 255, 200, 0.12);
     border: 1px solid rgba(0, 255, 200, 0.25);
-    max-width: 720px;
-    margin: 0 auto;
   }
   .mode-debutant-grid {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.4fr);
-    gap: 1rem 1.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1.25rem;
     align-items: center;
   }
   .mode-debutant-grid .field-label {
-    font-size: 0.80rem;
+    font-size: 0.85rem;
     opacity: 0.85;
   }
   .mode-debutant-grid .field-value {
@@ -1334,10 +1348,10 @@ body.theme-light {
     <div id="modeDebutant" class="mode-section">
       <div class="mode-debutant-card">
         <div class="mode-debutant-grid">
-          <div class="field-label">SCU Hull Scraping (Grattage de coque → RMC vendable)</div>
+          <div class="field-label">SCU Hull Scraping (RMC)</div>
           <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
 
-          <div class="field-label">SCU Construction Salvage (Reclaimer – Désintégration → Raffinerie → CMAT → Vente)</div>
+          <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
           <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
 
           <div class="field-label">Prix RMC (aUEC / SCU)</div>
@@ -1600,7 +1614,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.3.9";
+const APP_VERSION = "V5.3.0";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -1659,7 +1673,7 @@ const i18n = {
     leaderboardLoading: "Chargement du leaderboard en ligne…",
     leaderboardErrorPrefix: "Erreur leaderboard : ",
     leaderboardLine: (nickname, runs, profit, favShip, totalRmc, isAdmin) =>
-      `${nickname} – ${runs} runs · ${profit} aUEC théoriques · Ship fav : ${favShip} · Total RMC : ${totalRmc} SCU`,
+      `<span class="leaderboard-line-main">${nickname} – ${profit} aUEC</span><span class="leaderboard-line-meta">${runs} runs · Ship fav : ${favShip} · Total RMC : ${totalRmc} SCU</span>`,
     leaderboardYou: "Vous",
     leaderboardSub: "Leaderboard global en ligne : classement basé sur les runs envoyés par les joueurs. Les données sont stockées sur le serveur Salvage (via ton Worker).",
     labelShipSelect: "Vaisseau utilisé pour ce run",
@@ -1733,7 +1747,7 @@ const i18n = {
     leaderboardLoading: "Loading online leaderboard…",
     leaderboardErrorPrefix: "Leaderboard error: ",
     leaderboardLine: (nickname, runs, profit, favShip, totalRmc, isAdmin) =>
-      `${nickname} – ${runs} runs · ${profit} theoretical aUEC · Fav ship: ${favShip} · Total RMC: ${totalRmc} SCU`,
+      `<span class="leaderboard-line-main">${nickname} – ${profit} aUEC</span><span class="leaderboard-line-meta">${runs} runs · Fav ship: ${favShip} · Total RMC: ${totalRmc} SCU</span>`,
     leaderboardYou: "You",
     leaderboardSub: "Online global leaderboard: ranking based on runs sent by players. Data is stored on the Salvage server (via your Worker).",
     labelShipSelect: "Ship used for this run",
@@ -2080,7 +2094,7 @@ function renderOnlineLeaderboard(users, t) {
   });
 
   leaderboardListEl.innerHTML = "";
-  sorted.slice(0, 10).forEach(u => {
+  sorted.slice(0, 10).forEach((u, index) => {
     const profitStr = format(u.totalProfit);
     const totalRmcStr = format(u.totalRmcScu || 0);
     const favShip = u.favShip || "N/A";
@@ -2091,11 +2105,14 @@ function renderOnlineLeaderboard(users, t) {
       u.nickname &&
       u.nickname.toLowerCase() === currentUser.nickname.toLowerCase();
 
+    const rank = index + 1;
+
     let html = "";
     if (isCurrent) {
       html += `<span class="leaderboard-badge-you">${t.leaderboardYou}</span> `;
     }
 
+    html += `<span class="leaderboard-rank">#${rank}</span>`;
     html += t.leaderboardLine(
       u.nickname || "Unknown",
       u.totalRuns || 0,
@@ -2995,5 +3012,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
-
-
