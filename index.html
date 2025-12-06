@@ -1348,6 +1348,12 @@ body.theme-light {
       <button id="btnModeAvance" class="mode-btn">Mode Avancé</button>
     </div>
 
+    <div class="online-leaderboard-top-banner">
+      <button id="openOnlineLeaderboardBtn" type="button" class="my-runs-btn">
+        🏆 Leaderboard Salvage (online)
+      </button>
+    </div>
+
     <div id="modeDebutant" class="mode-section">
       <div class="mode-debutant-card">
         <div class="mode-debutant-grid">
@@ -1555,9 +1561,7 @@ body.theme-light {
             <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
               Aucun run en ligne pour l'instant.
             </div>
-            <button id="openOnlineLeaderboardBtn" type="button" class="my-runs-btn" style="margin-top:0.35rem;">
-              Voir le leaderboard complet
-            </button>
+            
           </div>
 
           <div class="leaderboard-actions">
@@ -2204,7 +2208,7 @@ function renderOnlineLeaderboard(users, t) {
   // --- LISTE COMPLÈTE dans la modale ---
   if (onlineLeaderboardFullListEl) {
     onlineLeaderboardFullListEl.innerHTML = "";
-    sorted.forEach((u, index) => {
+    sorted.slice(0, 20).forEach((u, index) => {
       const profitStr = format(u.totalProfit);
       const totalRmcStr = format(u.totalRmcScu || 0);
       const favShip = u.favShip || "N/A";
