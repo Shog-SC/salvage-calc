@@ -1549,9 +1549,15 @@ body.theme-light {
             </div>
           </div>
 
-          <ul id="leaderboardList" class="leaderboard-list"></ul>
-          <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
-            Aucun run enregistré pour l'instant.
+          <div id="leaderboardTop3Box" class="leaderboard-top3-box">
+            <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
+            <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
+            <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
+              Aucun run en ligne pour l'instant.
+            </div>
+            <button id="openOnlineLeaderboardBtn" type="button" class="my-runs-btn" style="margin-top:0.35rem;">
+              Voir le leaderboard complet
+            </button>
           </div>
 
           <div class="leaderboard-actions">
@@ -1569,6 +1575,25 @@ body.theme-light {
     <div id="appVersion" class="app-version"><span></span></div>
     <div class="app-footer-brand">
       Powered by <span>Shog Salvage Tools</span>
+    </div>
+  </div>
+</div>
+
+
+<div id="onlineLeaderboardModal" class="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h2 id="onlineLeaderboardTitle">Leaderboard Salvage (online)</h2>
+      <button id="onlineLeaderboardCloseBtn" class="modal-close-btn" type="button">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="onlineLeaderboardSub" class="leaderboard-sub">
+        Classement complet basé sur les runs envoyés par les joueurs.
+      </div>
+      <ul id="onlineLeaderboardFullList" class="leaderboard-list"></ul>
+      <div id="onlineLeaderboardFullEmpty" class="leaderboard-empty" style="display:none;">
+        Aucun run en ligne pour l'instant.
+      </div>
     </div>
   </div>
 </div>
@@ -1847,6 +1872,11 @@ const appVersionEl = document.getElementById("appVersion");
 
 const leaderboardListEl = document.getElementById("leaderboardList");
 const leaderboardEmptyEl = document.getElementById("leaderboardEmpty");
+const openOnlineLeaderboardBtnEl = document.getElementById("openOnlineLeaderboardBtn");
+const onlineLeaderboardModalEl = document.getElementById("onlineLeaderboardModal");
+const onlineLeaderboardFullListEl = document.getElementById("onlineLeaderboardFullList");
+const onlineLeaderboardFullEmptyEl = document.getElementById("onlineLeaderboardFullEmpty");
+const onlineLeaderboardCloseBtnEl = document.getElementById("onlineLeaderboardCloseBtn");
 const clearMyRunsBtnEl = document.getElementById("clearMyRunsBtn");
 const clearAllRunsBtnEl = document.getElementById("clearAllRunsBtn");
 const resetOnlineBtnEl = document.getElementById("resetOnlineBtn");
@@ -2102,14 +2132,26 @@ async function updateLocalLeaderboard(force = false) {
 function renderOnlineLeaderboard(users, t) {
   if (!leaderboardListEl || !leaderboardEmptyEl) return;
 
-  if (!users.length) {
+  // Top 3 + liste complète dans la modale
+  const hasUsers = Array.isArray(users) && users.length > 0;
+
+  // Gère les états "vide" côté Top 3
+  if (!hasUsers) {
     leaderboardListEl.innerHTML = "";
     leaderboardEmptyEl.style.display = "block";
     leaderboardEmptyEl.textContent = t.leaderboardEmpty;
+    if (onlineLeaderboardFullListEl && onlineLeaderboardFullEmptyEl) {
+      onlineLeaderboardFullListEl.innerHTML = "";
+      onlineLeaderboardFullEmptyEl.style.display = "block";
+      onlineLeaderboardFullEmptyEl.textContent = t.leaderboardEmpty;
+    }
     return;
   }
 
   leaderboardEmptyEl.style.display = "none";
+  if (onlineLeaderboardFullEmptyEl) {
+    onlineLeaderboardFullEmptyEl.style.display = "none";
+  }
 
   const sorted = users.slice().sort((a, b) => {
     if ((b.totalProfit || 0) !== (a.totalProfit || 0)) {
@@ -2118,8 +2160,10 @@ function renderOnlineLeaderboard(users, t) {
     return (b.totalRuns || 0) - (a.totalRuns || 0);
   });
 
+  // --- TOP 3 (page principale) ---
   leaderboardListEl.innerHTML = "";
-  sorted.slice(0, 10).forEach((u, index) => {
+  const top3 = sorted.slice(0, 3);
+  top3.forEach((u, index) => {
     const profitStr = format(u.totalProfit);
     const totalRmcStr = format(u.totalRmcScu || 0);
     const favShip = u.favShip || "N/A";
@@ -2156,7 +2200,50 @@ function renderOnlineLeaderboard(users, t) {
 
     leaderboardListEl.appendChild(li);
   });
+
+  // --- LISTE COMPLÈTE dans la modale ---
+  if (onlineLeaderboardFullListEl) {
+    onlineLeaderboardFullListEl.innerHTML = "";
+    sorted.forEach((u, index) => {
+      const profitStr = format(u.totalProfit);
+      const totalRmcStr = format(u.totalRmcScu || 0);
+      const favShip = u.favShip || "N/A";
+
+      const isCurrent =
+        currentUser &&
+        currentUser.nickname &&
+        u.nickname &&
+        u.nickname.toLowerCase() === currentUser.nickname.toLowerCase();
+
+      const rank = index + 1;
+
+      let html = "";
+      if (isCurrent) {
+        html += `<span class="leaderboard-badge-you">${t.leaderboardYou}</span> `;
+      }
+
+      html += `<span class="leaderboard-rank">#${rank}</span>`;
+      html += t.leaderboardLine(
+        u.nickname || "Unknown",
+        u.totalRuns || 0,
+        profitStr,
+        favShip,
+        totalRmcStr,
+        false
+      );
+
+      const li = document.createElement("li");
+      li.innerHTML = html;
+
+      if (isCurrent) {
+        li.classList.add("leaderboard-item-current");
+      }
+
+      onlineLeaderboardFullListEl.appendChild(li);
+    });
+  }
 }
+
 
 
 async function pushRunToOnlineLeaderboard(run) {
@@ -2213,6 +2300,17 @@ async function pushRunToOnlineLeaderboard(run) {
       saveRunMessageEl.textContent = t.saveRunError || "Erreur lors de l'envoi au leaderboard en ligne.";
     }
   }
+}
+
+
+function openOnlineLeaderboardModal() {
+  if (!onlineLeaderboardModalEl) return;
+  onlineLeaderboardModalEl.classList.add("open");
+}
+
+function closeOnlineLeaderboardModal() {
+  if (!onlineLeaderboardModalEl) return;
+  onlineLeaderboardModalEl.classList.remove("open");
 }
 
 function handleSaveRun() {
@@ -3111,7 +3209,26 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCalcDeb.addEventListener("click", calcDebutant);
   }
 
-  const verPill = document.getElementById("app-version-pill");
+  
+  if (openOnlineLeaderboardBtnEl && onlineLeaderboardModalEl) {
+    openOnlineLeaderboardBtnEl.addEventListener("click", () => {
+      openOnlineLeaderboardModal();
+    });
+  }
+
+  if (onlineLeaderboardCloseBtnEl && onlineLeaderboardModalEl) {
+    onlineLeaderboardCloseBtnEl.addEventListener("click", () => {
+      closeOnlineLeaderboardModal();
+    });
+
+    onlineLeaderboardModalEl.addEventListener("click", (e) => {
+      if (e.target === onlineLeaderboardModalEl) {
+        closeOnlineLeaderboardModal();
+      }
+    });
+  }
+
+const verPill = document.getElementById("app-version-pill");
   if (verPill) {
     verPill.textContent = `VERSION ${APP_VERSION}`;
   }
