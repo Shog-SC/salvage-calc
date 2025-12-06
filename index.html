@@ -1150,27 +1150,39 @@ body.theme-light {
     }
 
   
+  
   .mode-toggle {
     display: flex;
     gap: 0.75rem;
-    margin: 0.75rem 0 1rem 0;
+    margin: 0.75rem 0 1.25rem 0;
     justify-content: center;
   }
   .mode-btn {
-    padding: 0.35rem 0.9rem;
+    padding: 0.45rem 1.4rem;
     border-radius: 999px;
-    border: none;
+    border: 1px solid rgba(0, 255, 200, 0.5);
     cursor: pointer;
-    font-size: 0.9rem;
-    opacity: 0.7;
-    background: rgba(8, 23, 45, 0.9);
-    box-shadow: 0 0 0 1px rgba(0, 255, 200, 0.35);
+    font-size: 0.92rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    background: rgba(5, 20, 40, 0.9);
+    color: rgba(180, 255, 245, 0.8);
+    box-shadow: 0 0 8px rgba(0, 255, 200, 0.35);
+    transition: all 0.15s ease-out;
+  }
+  .mode-btn:hover {
+    box-shadow: 0 0 14px rgba(0, 255, 200, 0.6);
+    color: #e8ffff;
   }
   .mode-btn.active {
+    background: radial-gradient(circle at 20% 0%, rgba(0, 255, 200, 0.35), rgba(5, 20, 40, 0.95));
+    color: #ffffff;
+    box-shadow: 0 0 18px rgba(0, 255, 200, 0.9);
+    border-color: rgba(0, 255, 200, 0.9);
     opacity: 1;
-    box-shadow: 0 0 0 2px rgba(0, 255, 200, 0.7);
   }
   .mode-section.hidden {
+.mode-section.hidden {
     display: none;
   }
   .mode-debutant-card {
@@ -1277,13 +1289,14 @@ body.theme-light {
         </div>
 
         <div class="mode-debutant-result">
-          <div>Hull Scraping → RMC : <span id="debResRmc">–</span> aUEC</div>
-          <div>Construction Salvage → CMAT : <span id="debResCmat">–</span> aUEC</div>
-          <div class="mode-debutant-total">Total : <span id="debResTotal">–</span> aUEC</div>
+          <div>Hull Scraping → RMC vendu : <span id="debResRmc">–</span> aUEC</div>
+          <div>Construction Salvage → CMAT raffiné : <span id="debResCmat">–</span> aUEC</div>
+          <div class="mode-debutant-total">Total (vente RMC + CMAT) : <span id="debResTotal">–</span> aUEC</div>
         </div>
 
         <div style="margin-top:0.5rem; font-size:0.8rem; opacity:0.8;">
-          Ce mode utilise les mêmes données que le mode avancé et met à jour les panneaux détaillés automatiquement.
+          Ce mode calcule combien tu gagnes en vendant ton RMC et ton CMAT.
+          Il utilise les mêmes données que le mode avancé et met à jour les panneaux détaillés automatiquement.
         </div>
       </div>
     </div>
