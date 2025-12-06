@@ -2343,6 +2343,19 @@ async function resetOnlineLeaderboard() {
 
     const data = await res.json().catch(() => null);
 
+    // Cas quota Cloudflare atteint (ex: "KV put() limit exceeded for the day.")
+    if (data && typeof data.details === "string" &&
+        data.details.toLowerCase().includes("limit exceeded")) {
+      if (currentLang === "en") {
+        leaderboardActionMsgEl.textContent =
+          "⚠️ Cloudflare daily write limit reached. The reset will be available again tomorrow.";
+      } else {
+        leaderboardActionMsgEl.textContent =
+          "⚠️ Limite Cloudflare atteinte aujourd’hui. Le reset sera possible demain.";
+      }
+      return;
+    }
+
     if (!res.ok || !data || !data.ok) {
       const errText = (data && data.error) ? data.error : "Erreur inconnue";
       leaderboardActionMsgEl.textContent =
@@ -2367,8 +2380,19 @@ async function resetOnlineLeaderboard() {
     }
   } catch (e) {
     console.error(e);
-    leaderboardActionMsgEl.textContent =
-      t.leaderboardResetError || "Erreur réseau pendant le reset du leaderboard en ligne.";
+    const msg = String(e && e.message ? e.message : e || "");
+    if (msg.toLowerCase().includes("limit exceeded")) {
+      if (currentLang === "en") {
+        leaderboardActionMsgEl.textContent =
+          "⚠️ Cloudflare daily write limit reached. The reset will be available again tomorrow.";
+      } else {
+        leaderboardActionMsgEl.textContent =
+          "⚠️ Limite Cloudflare atteinte aujourd’hui. Le reset sera possible demain.";
+      }
+    } else {
+      leaderboardActionMsgEl.textContent =
+        t.leaderboardResetError || "Erreur réseau pendant le reset du leaderboard en ligne.";
+    }
   }
 }
 
