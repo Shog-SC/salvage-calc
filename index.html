@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.2.7 -->
+<!-- Version : V5.2.8 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1149,7 +1149,64 @@ body.theme-light {
       color: #103243;
     }
 
-  </style>
+  
+  .mode-toggle {
+    display: flex;
+    gap: 0.75rem;
+    margin: 0.75rem 0 1rem 0;
+    justify-content: center;
+  }
+  .mode-btn {
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    background: rgba(8, 23, 45, 0.9);
+    box-shadow: 0 0 0 1px rgba(0, 255, 200, 0.35);
+  }
+  .mode-btn.active {
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(0, 255, 200, 0.7);
+  }
+  .mode-section.hidden {
+    display: none;
+  }
+  .mode-debutant-card {
+    background: rgba(3, 10, 25, 0.9);
+    border-radius: 18px;
+    padding: 1rem 1.1rem;
+    box-shadow: 0 0 18px rgba(0, 255, 200, 0.12);
+    border: 1px solid rgba(0, 255, 200, 0.25);
+  }
+  .mode-debutant-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1.25rem;
+    align-items: center;
+  }
+  .mode-debutant-grid .field-label {
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+  .mode-debutant-grid .field-value {
+    font-size: 0.9rem;
+    text-align: right;
+    opacity: 0.9;
+  }
+  .mode-debutant-result {
+    margin-top: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 0.75rem;
+    font-size: 0.9rem;
+  }
+  .mode-debutant-total {
+    margin-top: 0.4rem;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+</style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -1193,7 +1250,46 @@ body.theme-light {
       <button id="changeUserBtn" type="button">Gérer mon profil</button>
     </div>
 
-    <div class="grid-main">
+    
+    <div class="mode-toggle">
+      <button id="btnModeDebutant" class="mode-btn active">Mode Débutant</button>
+      <button id="btnModeAvance" class="mode-btn">Mode Avancé</button>
+    </div>
+
+    <div id="modeDebutant" class="mode-section">
+      <div class="mode-debutant-card">
+        <div class="mode-debutant-grid">
+          <div class="field-label">SCU Hull Scraping (RMC)</div>
+          <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
+
+          <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
+          <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
+
+          <div class="field-label">Prix RMC (aUEC / SCU)</div>
+          <div id="debPrixRmc" class="field-value">–</div>
+
+          <div class="field-label">Prix CMAT (aUEC / SCU)</div>
+          <div id="debPrixCmat" class="field-value">–</div>
+        </div>
+
+        <div style="margin-top:1rem; text-align:center;">
+          <button id="btnCalcDebutant" class="btn-primary">Calculer le run</button>
+        </div>
+
+        <div class="mode-debutant-result">
+          <div>Hull Scraping → RMC : <span id="debResRmc">–</span> aUEC</div>
+          <div>Construction Salvage → CMAT : <span id="debResCmat">–</span> aUEC</div>
+          <div class="mode-debutant-total">Total : <span id="debResTotal">–</span> aUEC</div>
+        </div>
+
+        <div style="margin-top:0.5rem; font-size:0.8rem; opacity:0.8;">
+          Ce mode utilise les mêmes données que le mode avancé et met à jour les panneaux détaillés automatiquement.
+        </div>
+      </div>
+    </div>
+
+    <div id="modeAvance" class="mode-section hidden">
+      <div class="grid-main">
       <div class="panel">
         <div id="entriesTitle" class="panel-title">Entrées</div>
 
@@ -1422,7 +1518,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.2.7";
+const APP_VERSION = "V5.2.8";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -2716,6 +2812,90 @@ window.addEventListener("load", () => {
   buildMyRunsList();
 
   fetchUexPrices();
+});
+
+function setModeDebutant(isDeb) {
+  const deb = document.getElementById("modeDebutant");
+  const adv = document.getElementById("modeAvance");
+  const btnDeb = document.getElementById("btnModeDebutant");
+  const btnAdv = document.getElementById("btnModeAvance");
+  if (!deb || !adv || !btnDeb || !btnAdv) return;
+  if (isDeb) {
+    deb.classList.remove("hidden");
+    adv.classList.add("hidden");
+    btnDeb.classList.add("active");
+    btnAdv.classList.remove("active");
+  } else {
+    deb.classList.add("hidden");
+    adv.classList.remove("hidden");
+    btnDeb.classList.remove("active");
+    btnAdv.classList.add("active");
+  }
+}
+
+function refreshDebutantPrices() {
+  if (typeof prixRmcInput === "undefined" || typeof prixCmatInput === "undefined") return;
+  const prixRMC  = Number(prixRmcInput.value)  || 0;
+  const prixCMAT = Number(prixCmatInput.value) || 0;
+  const debPrixRmcEl  = document.getElementById("debPrixRmc");
+  const debPrixCmatEl = document.getElementById("debPrixCmat");
+  if (debPrixRmcEl)  debPrixRmcEl.textContent  = prixRMC ? format(prixRMC) : "–";
+  if (debPrixCmatEl) debPrixCmatEl.textContent = prixCMAT ? format(prixCMAT) : "–";
+}
+
+function calcDebutant() {
+  const hullEl = document.getElementById("scuHullDeb");
+  const csEl   = document.getElementById("scuCsDeb");
+  const scuHull = hullEl ? Number(hullEl.value) || 0 : 0;
+  const scuCs   = csEl ? Number(csEl.value) || 0 : 0;
+
+  if (typeof prixRmcInput === "undefined" || typeof prixCmatInput === "undefined") return;
+  const prixRMC  = Number(prixRmcInput.value)  || 0;
+  const prixCMAT = Number(prixCmatInput.value) || 0;
+
+  refreshDebutantPrices();
+
+  const valRmc   = scuHull * prixRMC;
+  const cmatScu  = scuCs * REND_RECLAIMER;
+  const valCmat  = cmatScu * prixCMAT;
+  const total    = valRmc + valCmat;
+
+  const debResRmcEl   = document.getElementById("debResRmc");
+  const debResCmatEl  = document.getElementById("debResCmat");
+  const debResTotalEl = document.getElementById("debResTotal");
+
+  if (debResRmcEl)   debResRmcEl.textContent   = format(valRmc);
+  if (debResCmatEl)  debResCmatEl.textContent  = format(valCmat);
+  if (debResTotalEl) debResTotalEl.textContent = format(total);
+
+  // Synchronise avec le mode avancé
+  if (typeof scuLightInput !== "undefined" && scuLightInput) {
+    scuLightInput.value = String(scuHull);
+  }
+  if (typeof scuRecInput !== "undefined" && scuRecInput) {
+    scuRecInput.value = String(scuCs);
+  }
+  if (typeof recalc === "function") {
+    recalc();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnDeb = document.getElementById("btnModeDebutant");
+  const btnAdv = document.getElementById("btnModeAvance");
+  const btnCalcDeb = document.getElementById("btnCalcDebutant");
+
+  if (btnDeb && btnAdv) {
+    btnDeb.addEventListener("click", () => setModeDebutant(true));
+    btnAdv.addEventListener("click", () => setModeDebutant(false));
+  }
+  if (btnCalcDeb) {
+    btnCalcDeb.addEventListener("click", calcDebutant);
+  }
+
+  // Démarre en mode débutant
+  setModeDebutant(true);
+  refreshDebutantPrices();
 });
 </script>
 </body>
