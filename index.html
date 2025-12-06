@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.3.0 -->
+<!-- Version : V5.4.4 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1557,6 +1557,9 @@ body.theme-light {
           <div class="leaderboard-actions">
             <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
             <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
+            <button id="resetOnlineBtn" type="button" style="display:none; width:100%; margin-top:0.35rem;">
+              Reset leaderboard online (admin)
+            </button>
             <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
           </div>
         </div>
@@ -1622,7 +1625,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.4.3";
+const APP_VERSION = "V5.4.4";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -1694,6 +1697,10 @@ const i18n = {
     clearMyRunsNoUser: "Aucun profil chargé. Crée ou importe un profil pour supprimer uniquement tes runs.",
     clearMyRunsDone: "Tes runs locaux ont été supprimés de cette liste (leaderboard en ligne non modifié).",
     clearAllRunsDone: "Toutes tes données locales ont été réinitialisées (leaderboard en ligne non modifié).",
+    leaderboardAdminOnly: "Action réservée à l'admin.",
+    leaderboardResetLoading: "Reset du leaderboard en ligne en cours…",
+    leaderboardResetDone: (count) => `Leaderboard en ligne nettoyé (${count} profil(s) supprimé(s)).`,
+    leaderboardResetError: "Erreur pendant le reset du leaderboard en ligne.",
     myRunsBtn: "Voir mes runs détaillés",
     myRunsTitle: "Mes runs enregistrés",
     myRunsActiveTitle: "En attente de vente",
@@ -1768,6 +1775,10 @@ const i18n = {
     clearMyRunsNoUser: "No profile loaded. Create or import a profile to delete only your runs.",
     clearMyRunsDone: "Your local runs have been removed from this list (online leaderboard unchanged).",
     clearAllRunsDone: "All your local data has been reset (online leaderboard unchanged).",
+    leaderboardAdminOnly: "This action is reserved for admin.",
+    leaderboardResetLoading: "Resetting online leaderboard…",
+    leaderboardResetDone: (count) => `Online leaderboard cleared (${count} profile(s) removed).`,
+    leaderboardResetError: "Error while resetting the online leaderboard.",
     myRunsBtn: "View my detailed runs",
     myRunsTitle: "My saved runs",
     myRunsActiveTitle: "Pending sale",
@@ -1840,6 +1851,7 @@ const leaderboardListEl = document.getElementById("leaderboardList");
 const leaderboardEmptyEl = document.getElementById("leaderboardEmpty");
 const clearMyRunsBtnEl = document.getElementById("clearMyRunsBtn");
 const clearAllRunsBtnEl = document.getElementById("clearAllRunsBtn");
+const resetOnlineBtnEl = document.getElementById("resetOnlineBtn");
 const leaderboardActionMsgEl = document.getElementById("leaderboardActionMsg");
 const leaderboardSubEl = document.getElementById("leaderboardSub");
 
@@ -1886,10 +1898,17 @@ function isAdminUser(user) {
 }
 
 function updateAdminUI() {
-  if (!clearAllRunsBtnEl) return;
-  clearAllRunsBtnEl.style.display = isAdminUser(currentUser) ? "block" : "none";
+  const isAdmin = isAdminUser(currentUser);
 
-  if (userInfoEl && currentUser && isAdminUser(currentUser)) {
+  if (clearAllRunsBtnEl) {
+    clearAllRunsBtnEl.style.display = isAdmin ? "block" : "none";
+  }
+
+  if (resetOnlineBtnEl) {
+    resetOnlineBtnEl.style.display = isAdmin ? "block" : "none";
+  }
+
+  if (userInfoEl && currentUser && isAdmin) {
     if (!userInfoEl.querySelector(".admin-badge-inline")) {
       const badge = document.createElement("span");
       badge.className = "admin-badge-inline";
@@ -2298,6 +2317,59 @@ function clearAllRuns() {
   updateLocalLeaderboard();
   buildMyRunsList();
   leaderboardActionMsgEl.textContent = t.clearAllRunsDone;
+}
+
+
+async function resetOnlineLeaderboard() {
+  const t = i18n[currentLang] || i18n.fr;
+
+  if (!currentUser || !isAdminUser(currentUser)) {
+    leaderboardActionMsgEl.textContent =
+      t.leaderboardAdminOnly || "Action réservée à l'admin.";
+    return;
+  }
+
+  leaderboardActionMsgEl.textContent =
+    t.leaderboardResetLoading || "Reset du leaderboard en ligne en cours…";
+
+  try {
+    const res = await fetch(`${LEADERBOARD_API_BASE}/api/admin/reset-leaderboard`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profileKey: currentUser.secret,
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data || !data.ok) {
+      const errText = (data && data.error) ? data.error : "Erreur inconnue";
+      leaderboardActionMsgEl.textContent =
+        (t.leaderboardResetError || "Erreur pendant le reset du leaderboard en ligne.") +
+        ` (${errText})`;
+      return;
+    }
+
+    const count = data.deleted || 0;
+    if (t.leaderboardResetDone) {
+      leaderboardActionMsgEl.textContent = t.leaderboardResetDone(count);
+    } else {
+      leaderboardActionMsgEl.textContent =
+        `Leaderboard en ligne nettoyé (${count} profil(s) supprimé(s)).`;
+    }
+
+    // Rafraîchit le leaderboard global
+    cachedLeaderboardUsers = [];
+    lastLeaderboardFetch = 0;
+    if (typeof refreshLeaderboard === "function") {
+      refreshLeaderboard();
+    }
+  } catch (e) {
+    console.error(e);
+    leaderboardActionMsgEl.textContent =
+      t.leaderboardResetError || "Erreur réseau pendant le reset du leaderboard en ligne.";
+  }
 }
 
 function updateRunSold(ts, sold) {
@@ -2750,6 +2822,10 @@ if (clearMyRunsBtnEl) {
 
 if (clearAllRunsBtnEl) {
   clearAllRunsBtnEl.addEventListener("click", clearAllRuns);
+}
+
+if (resetOnlineBtnEl) {
+  resetOnlineBtnEl.addEventListener("click", resetOnlineLeaderboard);
 }
 
 let cmatChart = null;
