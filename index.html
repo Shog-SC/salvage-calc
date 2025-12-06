@@ -1341,6 +1341,12 @@ body.theme-light {
 
           <div class="field-label">Prix CMAT (aUEC / SCU)</div>
           <div id="debPrixCmat" class="field-value">–</div>
+
+          <div class="field-label">Point de vente RMC</div>
+          <div id="debRmcTerminal" class="field-value">—</div>
+
+          <div class="field-label">Point de vente CMAT</div>
+          <div id="debCmatTerminal" class="field-value">—</div>
         </div>
 
         <div style="margin-top:1rem; text-align:center;">
@@ -1350,7 +1356,7 @@ body.theme-light {
         <div class="mode-debutant-result">
           <div>Hull Scraping → RMC vendu : <span id="debResRmc">–</span> aUEC</div>
           <div>Construction Salvage → CMAT raffiné : <span id="debResCmat">–</span> aUEC</div>
-          <div class="mode-debutant-total neon-total">Total (vente RMC + CMAT) : <span id="debResTotal">–</span> aUEC</div>
+          <div class="mode-debutant-total neon-total">Total (vente salvage) : <span id="debResTotal">–</span> aUEC</div>
         </div>
 
         <div style="margin-top:0.5rem; font-size:0.8rem; opacity:0.8;">
@@ -2913,7 +2919,20 @@ function refreshDebutantPrices() {
   const debPrixCmatEl = document.getElementById("debPrixCmat");
   if (debPrixRmcEl)  debPrixRmcEl.textContent  = prixRMC ? format(prixRMC) : "–";
   if (debPrixCmatEl) debPrixCmatEl.textContent = prixCMAT ? format(prixCMAT) : "–";
+
+  const srcRmcTerminal  = document.getElementById("rmcTerminal");
+  const srcCmatTerminal = document.getElementById("cmatTerminal");
+  const debRmcTermEl    = document.getElementById("debRmcTerminal");
+  const debCmatTermEl   = document.getElementById("debCmatTerminal");
+
+  if (debRmcTermEl && srcRmcTerminal) {
+    debRmcTermEl.textContent = srcRmcTerminal.textContent || "—";
+  }
+  if (debCmatTermEl && srcCmatTerminal) {
+    debCmatTermEl.textContent = srcCmatTerminal.textContent || "—";
+  }
 }
+
 
 function calcDebutant() {
   const hullEl = document.getElementById("scuHullDeb");
