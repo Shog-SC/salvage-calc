@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.3.0 -->
+<!-- Version : V5.3.2 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1199,7 +1199,7 @@ body.theme-light {
     align-items: center;
   }
   .mode-debutant-grid .field-label {
-    font-size: 0.85rem;
+    font-size: 0.80rem;
     opacity: 0.85;
   }
   .mode-debutant-grid .field-value {
@@ -1258,7 +1258,7 @@ body.theme-light {
     align-items: center;
   }
   .mode-debutant-grid .field-label {
-    font-size: 0.85rem;
+    font-size: 0.80rem;
     opacity: 0.85;
   }
   .mode-debutant-grid .field-value {
@@ -1330,10 +1330,10 @@ body.theme-light {
     <div id="modeDebutant" class="mode-section">
       <div class="mode-debutant-card">
         <div class="mode-debutant-grid">
-          <div class="field-label">SCU Hull Scraping (RMC)</div>
+          <div class="field-label">SCU Hull Scraping (Grattage de coque → RMC vendable)</div>
           <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
 
-          <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
+          <div class="field-label">SCU Construction Salvage (Reclaimer – Désintégration → Raffinerie → CMAT → Vente)</div>
           <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
 
           <div class="field-label">Prix RMC (aUEC / SCU)</div>
@@ -1596,7 +1596,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.3.0";
+const APP_VERSION = "V5.3.2";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
