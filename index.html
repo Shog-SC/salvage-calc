@@ -1381,7 +1381,9 @@ body.theme-light {
         </div>
 
         <div style="margin-top:0.5rem; font-size:0.8rem; opacity:0.8;">
-          Ce mode calcule combien tu gagnes en vendant ton RMC et ton CMAT.
+          Ce mode calcule combien tu gagnes en vendant ton salvage selon deux boucles&nbsp;:<br>
+          • Hull Scraping → RMC vendu directement.<br>
+          • Désintégration (Construction Salvage, Reclaimer) → Raffinage → CMAT → Vente.<br>
           Il utilise les mêmes données que le mode avancé et met à jour les panneaux détaillés automatiquement.
         </div>
       </div>
@@ -1620,7 +1622,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.4.2";
+const APP_VERSION = "V5.4.3";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
