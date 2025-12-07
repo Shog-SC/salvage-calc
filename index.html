@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.6.12 -->
+<!-- Version : V5.6.13 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1385,17 +1385,25 @@ body.theme-light {
     <div id="modeDebutant" class="mode-section">
       <div class="mode-debutant-card">
         <div class="mode-debutant-grid">
-          <div id="debScuLightGroup">
-            <div class="field-label">SCU Hull Scraping (RMC)</div>
-            <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
+          <div class="field-label" id="labelDebShip">Vaisseau (mode Débutant)</div>
+          <div>
+            <select id="debShipSelect">
+              <option value="light">Salvation / Vulture / Fortune</option>
+              <option value="reclaimer">Reclaimer</option>
+            </select>
           </div>
 
-          <div id="debScuReclaimerGroup">
-            <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
-            <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
-            <div class="hint" style="grid-column: 1 / -1; font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem;">
-              💡 Indique ici le nombre total de SCU brutes récoltées avant raffinage.
-            </div>
+          <div class="field-label" id="labelScuHullDeb">SCU Hull Scraping (RMC)</div>
+          <div id="fieldScuHullDeb"><input id="scuHullDeb" type="number" min="0" value="0" /></div>
+
+          <div class="field-label" id="labelScuCsDeb">SCU Construction Salvage (Reclaimer → CMAT)</div>
+          <div id="fieldScuCsDeb"><input id="scuCsDeb" type="number" min="0" value="0" /></div>
+          <div
+            class="hint"
+            id="hintScuCsDeb"
+            style="grid-column: 1 / -1; font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem;"
+          >
+            💡 Indique ici le nombre total de SCU brutes récoltées avant raffinage.
           </div>
 
           <div class="field-label">Prix RMC (aUEC / SCU)</div>
@@ -1704,7 +1712,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.6.12";
+const APP_VERSION = "V5.6.13";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -1974,8 +1982,12 @@ const loopRmcLightPanelEl = document.getElementById("loopRmcLightPanel");
 const loopRmcReclaimerPanelEl = document.getElementById("loopRmcReclaimerPanel");
 const loopCmatLightPanelEl = document.getElementById("loopCmatLightPanel");
 const loopCmatReclaimerPanelEl = document.getElementById("loopCmatReclaimerPanel");
-const debScuLightGroupEl = document.getElementById("debScuLightGroup");
-const debScuReclaimerGroupEl = document.getElementById("debScuReclaimerGroup");
+const debShipSelectEl = document.getElementById("debShipSelect");
+const labelScuHullDebEl = document.getElementById("labelScuHullDeb");
+const fieldScuHullDebEl = document.getElementById("fieldScuHullDeb");
+const labelScuCsDebEl = document.getElementById("labelScuCsDeb");
+const fieldScuCsDebEl = document.getElementById("fieldScuCsDeb");
+const hintScuCsDebEl = document.getElementById("hintScuCsDeb");
 
 let currentUser = null;
 
@@ -2377,36 +2389,51 @@ function closeOnlineLeaderboardModal() {
 
 
 function updateScuAdvancedVisibility() {
-  if (!shipSelectEl) return;
+  // Partie avancée : basée sur le sélecteur de vaisseau principal
+  let isReclaimerAdv = false;
+  if (shipSelectEl) {
+    const ship = (shipSelectEl.value || "").toLowerCase();
+    isReclaimerAdv = ship.includes("reclaimer");
+  }
 
-  const ship = (shipSelectEl.value || "").toLowerCase();
-  const isReclaimer = ship.includes("reclaimer");
+  // Partie débutant : basée sur le sélecteur dédié
+  let isReclaimerDeb = false;
+  if (debShipSelectEl) {
+    const v = (debShipSelectEl.value || "").toLowerCase();
+    isReclaimerDeb = v === "reclaimer";
+  }
 
+  // Mode avancé : SCU et panneaux détaillés
   if (advancedScuLightGroupEl) {
-    advancedScuLightGroupEl.style.display = isReclaimer ? "none" : "";
+    advancedScuLightGroupEl.style.display = isReclaimerAdv ? "none" : "";
   }
   if (advancedScuReclaimerGroupEl) {
-    advancedScuReclaimerGroupEl.style.display = isReclaimer ? "" : "none";
+    advancedScuReclaimerGroupEl.style.display = isReclaimerAdv ? "" : "none";
   }
 
   if (loopRmcLightPanelEl) {
-    loopRmcLightPanelEl.style.display = isReclaimer ? "none" : "";
+    loopRmcLightPanelEl.style.display = isReclaimerAdv ? "none" : "";
   }
   if (loopRmcReclaimerPanelEl) {
-    loopRmcReclaimerPanelEl.style.display = isReclaimer ? "" : "none";
+    loopRmcReclaimerPanelEl.style.display = isReclaimerAdv ? "" : "none";
   }
   if (loopCmatLightPanelEl) {
-    loopCmatLightPanelEl.style.display = isReclaimer ? "none" : "";
+    loopCmatLightPanelEl.style.display = isReclaimerAdv ? "none" : "";
   }
   if (loopCmatReclaimerPanelEl) {
-    loopCmatReclaimerPanelEl.style.display = isReclaimer ? "" : "none";
+    loopCmatReclaimerPanelEl.style.display = isReclaimerAdv ? "" : "none";
   }
 
-  if (debScuLightGroupEl) {
-    debScuLightGroupEl.style.display = isReclaimer ? "none" : "";
+  // Mode débutant : champs SCU simplifiés
+  if (labelScuHullDebEl && fieldScuHullDebEl) {
+    const showLight = !isReclaimerDeb;
+    labelScuHullDebEl.style.display = showLight ? "" : "none";
+    fieldScuHullDebEl.style.display = showLight ? "" : "none";
   }
-  if (debScuReclaimerGroupEl) {
-    debScuReclaimerGroupEl.style.display = isReclaimer ? "" : "none";
+  if (labelScuCsDebEl && fieldScuCsDebEl && hintScuCsDebEl) {
+    labelScuCsDebEl.style.display = isReclaimerDeb ? "" : "none";
+    fieldScuCsDebEl.style.display = isReclaimerDeb ? "" : "none";
+    hintScuCsDebEl.style.display = isReclaimerDeb ? "" : "none";
   }
 }
 
@@ -3310,6 +3337,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
     if (shipSelectEl) {
     shipSelectEl.addEventListener("change", () => {
+      updateScuAdvancedVisibility();
+    });
+  }
+
+
+  if (debShipSelectEl) {
+    debShipSelectEl.addEventListener("change", () => {
       updateScuAdvancedVisibility();
     });
   }
