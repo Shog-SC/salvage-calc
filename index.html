@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.6.8 -->
+<!-- Version : V5.6.9 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1679,6 +1679,18 @@ body.theme-light {
   </div>
 </div>
 
+
+  <div id="leaderboardSideTab" class="leaderboard-side-tab">
+    <button
+      id="openOnlineLeaderboardBtn"
+      type="button"
+      class="leaderboard-side-btn"
+      title="Leaderboard en ligne"
+    >
+      🏆
+    </button>
+  </div>
+
 <script>
 
 function toggleMoreInfo() {
@@ -1688,7 +1700,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.6.8";
+const APP_VERSION = "V5.6.9";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -3301,17 +3313,6 @@ const verPill = document.getElementById("app-version-pill");
   refreshDebutantPrices();
 });
 </script>
-
-  <div id="leaderboardSideTab" class="leaderboard-side-tab">
-    <button
-      id="openOnlineLeaderboardBtn"
-      type="button"
-      class="leaderboard-side-btn"
-      title="Leaderboard en ligne"
-    >
-      🏆
-    </button>
-  </div>
 
 </body>
 </html>
