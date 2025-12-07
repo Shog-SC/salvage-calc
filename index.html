@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V5.6.11 -->
+<!-- Version : V5.6.12 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -1385,13 +1385,17 @@ body.theme-light {
     <div id="modeDebutant" class="mode-section">
       <div class="mode-debutant-card">
         <div class="mode-debutant-grid">
-          <div class="field-label">SCU Hull Scraping (RMC)</div>
-          <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
+          <div id="debScuLightGroup">
+            <div class="field-label">SCU Hull Scraping (RMC)</div>
+            <div><input id="scuHullDeb" type="number" min="0" value="0" /></div>
+          </div>
 
-          <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
-          <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
-          <div class="hint" style="grid-column: 1 / -1; font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem;">
-            💡 Indique ici le nombre total de SCU brutes récoltées avant raffinage.
+          <div id="debScuReclaimerGroup">
+            <div class="field-label">SCU Construction Salvage (Reclaimer → CMAT)</div>
+            <div><input id="scuCsDeb" type="number" min="0" value="0" /></div>
+            <div class="hint" style="grid-column: 1 / -1; font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem;">
+              💡 Indique ici le nombre total de SCU brutes récoltées avant raffinage.
+            </div>
           </div>
 
           <div class="field-label">Prix RMC (aUEC / SCU)</div>
@@ -1700,7 +1704,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V5.6.11";
+const APP_VERSION = "V5.6.12";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -1970,6 +1974,8 @@ const loopRmcLightPanelEl = document.getElementById("loopRmcLightPanel");
 const loopRmcReclaimerPanelEl = document.getElementById("loopRmcReclaimerPanel");
 const loopCmatLightPanelEl = document.getElementById("loopCmatLightPanel");
 const loopCmatReclaimerPanelEl = document.getElementById("loopCmatReclaimerPanel");
+const debScuLightGroupEl = document.getElementById("debScuLightGroup");
+const debScuReclaimerGroupEl = document.getElementById("debScuReclaimerGroup");
 
 let currentUser = null;
 
@@ -2394,6 +2400,13 @@ function updateScuAdvancedVisibility() {
   }
   if (loopCmatReclaimerPanelEl) {
     loopCmatReclaimerPanelEl.style.display = isReclaimer ? "" : "none";
+  }
+
+  if (debScuLightGroupEl) {
+    debScuLightGroupEl.style.display = isReclaimer ? "none" : "";
+  }
+  if (debScuReclaimerGroupEl) {
+    debScuReclaimerGroupEl.style.display = isReclaimer ? "" : "none";
   }
 }
 
