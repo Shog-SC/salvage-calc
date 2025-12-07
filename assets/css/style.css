@@ -1201,6 +1201,18 @@ body.theme-light {
   .mode-debutant-grid input[type="number"] {
     width: calc(100% - 0.75rem);
   }
+
+  .mode-debutant-grid select {
+    margin-top: 4px;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--accent);
+    background: #04121c;
+    color: var(--text-main);
+    font-size: 14px;
+  }
   .mode-debutant-grid .field-label {
     font-size: 0.85rem;
     opacity: 0.85;
