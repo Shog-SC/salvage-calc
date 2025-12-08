@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.3.0 -->
+<!-- Version : V6.3.1 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -294,28 +294,6 @@
 
           <div id="leaderboardTop3Box" class="leaderboard-top3-box">
             <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
-            
-            <div class="leaderboard-controls">
-              <div class="leaderboard-control-group">
-                <label id="leaderboardSortLabel" for="leaderboardSortSelect">Tri :</label>
-                <select id="leaderboardSortSelect">
-                  <option value="profit">Profit total</option>
-                  <option value="runs">Nombre de runs</option>
-                  <option value="name">Pseudo</option>
-                </select>
-              </div>
-              <div class="leaderboard-control-group">
-                <label id="leaderboardShipFilterLabel" for="leaderboardShipFilter">Vaisseau :</label>
-                <select id="leaderboardShipFilter">
-                  <option value="all">Tous les vaisseaux</option>
-                  <option value="vulture">Vulture</option>
-                  <option value="salvation">Salvation</option>
-                  <option value="fortune">Fortune</option>
-                  <option value="reclaimer">Reclaimer</option>
-                </select>
-              </div>
-            </div>
-
             <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
             <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
               Aucun run en ligne pour l'instant.
@@ -353,6 +331,28 @@
       <div id="onlineLeaderboardSub" class="leaderboard-sub">
         Classement complet basé sur les runs envoyés par les joueurs.
       </div>
+
+      <div class="leaderboard-controls leaderboard-controls-modal">
+        <div class="leaderboard-control-group">
+          <label id="leaderboardSortLabel" for="leaderboardSortSelect">Tri :</label>
+          <select id="leaderboardSortSelect">
+            <option value="profit">Profit total</option>
+            <option value="runs">Nombre de runs</option>
+            <option value="name">Pseudo</option>
+          </select>
+        </div>
+        <div class="leaderboard-control-group">
+          <label id="leaderboardShipFilterLabel" for="leaderboardShipFilter">Vaisseau :</label>
+          <select id="leaderboardShipFilter">
+            <option value="all">Tous les vaisseaux</option>
+            <option value="vulture">Vulture</option>
+            <option value="salvation">Salvation</option>
+            <option value="fortune">Fortune</option>
+            <option value="reclaimer">Reclaimer</option>
+          </select>
+        </div>
+      </div>
+
       <ul id="onlineLeaderboardFullList" class="leaderboard-list"></ul>
       <div id="onlineLeaderboardFullEmpty" class="leaderboard-empty" style="display:none;">
         Aucun run en ligne pour l'instant.
@@ -425,7 +425,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.3.0";
+const APP_VERSION = "V6.3.1";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
