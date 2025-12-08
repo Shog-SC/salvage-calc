@@ -1394,7 +1394,7 @@ body.theme-light {
 }
 
 #onlineLeaderboardModal .modal-leaderboard .modal-header h2::after {
-  content: "V6.0.0";
+  content: "LB 6.4.3";
   font-size: 0.7rem;
   padding: 2px 6px;
   border-radius: 999px;
