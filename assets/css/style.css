@@ -1694,3 +1694,13 @@ body.theme-light {
   font-size: 0.9rem;
   color: var(--text-muted);
 }
+
+
+/* V6.4.2 Anti-spam */
+.anti-spam-message {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-style: italic;
+  color: #f7d36b;
+}
