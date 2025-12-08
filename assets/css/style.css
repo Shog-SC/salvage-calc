@@ -1717,3 +1717,11 @@ body.theme-light {
   font-size: 1rem;
   line-height: 1.45;
 }
+
+
+/* V6.4.5 – Sous-titre de panel (CMAT sous RMC) */
+.panel-title-sub {
+  margin-top: 1.2rem;
+  font-size: 1.05rem;
+  opacity: 0.95;
+}
