@@ -1,4 +1,4 @@
-/* Salvage Calculator 4.4 - Styles V6.2.2 (leaderboard + form inputs align) */
+/* Salvage Calculator 4.4 - Styles V6.2.3 (leaderboard + form inputs align fix) */
 
     :root {
       --bg: #020710;
@@ -1582,3 +1582,12 @@ body.theme-light {
   width: 280px;
   max-width: 100%;
 }
+/* V6.2.3 – Force fixed width for Entrées inputs */
+.panel-block input.input-standard,
+.panel-block select.input-standard {
+  display: inline-block !important;
+  width: 280px !important;
+  max-width: 100%;
+  flex: none !important;
+}
+
