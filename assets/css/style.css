@@ -1,4 +1,4 @@
-/* Salvage Calculator 4.4 - Styles V6.3.1 (leaderboard + form inputs align fix) */
+/* Salvage Calculator 4.4 - Styles V6.4.0 (leaderboard + form inputs align fix) */
 
     :root {
       --bg: #020710;
@@ -1583,7 +1583,7 @@ body.theme-light {
   width: 280px;
   max-width: 100%;
 }
-/* V6.3.1 – Force fixed width for Entrées inputs */
+/* V6.4.0 – Force fixed width for Entrées inputs */
 .panel-block input.input-standard,
 .panel-block select.input-standard {
   display: inline-block !important;
@@ -1627,7 +1627,70 @@ body.theme-light {
 }
 
 
-/* V6.3.1 – Leaderboard controls only in modal */
+/* V6.4.0 – Leaderboard controls only in modal */
 .leaderboard-controls-modal {
   margin-top: 0.75rem;
+}
+
+/* V6.4.0 – Activity switch (Salvage / Hauling / Mining) */
+.activity-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.activity-pill {
+  padding: 0.3rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent-alt);
+  background: radial-gradient(circle at top, rgba(0,255,200,0.18), rgba(0,0,0,0.7));
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-soft);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.activity-pill.active {
+  background: radial-gradient(circle at top, rgba(0,255,200,0.45), rgba(0,0,0,0.9));
+  border-color: var(--accent-strong);
+  color: var(--text-main);
+  box-shadow: 0 0 20px rgba(0,255,200,0.45);
+  transform: translateY(-1px);
+}
+
+.activity-pill.disabled {
+  opacity: 0.45;
+  cursor: default;
+  border-style: dashed;
+}
+
+.activity-panel {
+  display: none;
+}
+
+.activity-panel.active {
+  display: block;
+}
+
+.coming-soon-card {
+  margin-top: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 255, 200, 0.22);
+  background: radial-gradient(circle at top, rgba(0, 255, 200, 0.08), rgba(1, 8, 18, 0.95));
+  box-shadow: 0 0 26px rgba(0, 0, 0, 0.75);
+}
+
+.coming-soon-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-main);
+}
+
+.coming-soon-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
