@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.2.3 -->
+<!-- Version : V6.3.0 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -294,6 +294,28 @@
 
           <div id="leaderboardTop3Box" class="leaderboard-top3-box">
             <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
+            
+            <div class="leaderboard-controls">
+              <div class="leaderboard-control-group">
+                <label id="leaderboardSortLabel" for="leaderboardSortSelect">Tri :</label>
+                <select id="leaderboardSortSelect">
+                  <option value="profit">Profit total</option>
+                  <option value="runs">Nombre de runs</option>
+                  <option value="name">Pseudo</option>
+                </select>
+              </div>
+              <div class="leaderboard-control-group">
+                <label id="leaderboardShipFilterLabel" for="leaderboardShipFilter">Vaisseau :</label>
+                <select id="leaderboardShipFilter">
+                  <option value="all">Tous les vaisseaux</option>
+                  <option value="vulture">Vulture</option>
+                  <option value="salvation">Salvation</option>
+                  <option value="fortune">Fortune</option>
+                  <option value="reclaimer">Reclaimer</option>
+                </select>
+              </div>
+            </div>
+
             <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
             <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
               Aucun run en ligne pour l'instant.
@@ -403,7 +425,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.2.3";
+const APP_VERSION = "V6.3.0";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -412,6 +434,55 @@ let lastOnlineRunTs = Number(localStorage.getItem("salvageCalcLastOnlineRunTs") 
 let lastLeaderboardFetch = 0;
 let cachedLeaderboardUsers = [];
 
+
+let leaderboardSortKey = localStorage.getItem("salvageLbSort") || "profit";
+let leaderboardShipFilterKey = localStorage.getItem("salvageLbShipFilter") || "all";
+
+function getFilteredSortedLeaderboardUsers(users) {
+  if (!Array.isArray(users)) return [];
+  let arr = users.slice();
+
+  const filterKey = (leaderboardShipFilterKey || "all").toLowerCase();
+  if (filterKey && filterKey !== "all") {
+    arr = arr.filter((u) => {
+      const fav = (u.favShip || "").toLowerCase();
+      return fav.includes(filterKey);
+    });
+  }
+
+  arr.sort((a, b) => {
+    const profitA = Number(a.totalProfit || 0);
+    const profitB = Number(b.totalProfit || 0);
+    const runsA = Number(a.totalRuns || 0);
+    const runsB = Number(b.totalRuns || 0);
+    const nameA = (a.nickname || "").toLowerCase();
+    const nameB = (b.nickname || "").toLowerCase();
+
+    switch (leaderboardSortKey) {
+      case "runs":
+        if (runsB !== runsA) return runsB - runsA;
+        if (profitB !== profitA) return profitB - profitA;
+        return nameA.localeCompare(nameB);
+      case "name":
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
+        if (profitB !== profitA) return profitB - profitA;
+        return runsB - runsA;
+      case "profit":
+      default:
+        if (profitB !== profitA) return profitB - profitA;
+        if (runsB !== runsA) return runsB - runsA;
+        return nameA.localeCompare(nameB);
+    }
+  });
+
+  return arr;
+}
+
+function rerenderOnlineLeaderboardFromCache() {
+  const t = i18n[currentLang] || i18n.fr;
+  if (!cachedLeaderboardUsers || !cachedLeaderboardUsers.length) return;
+  renderOnlineLeaderboard(cachedLeaderboardUsers, t);
+}
 
 let currentLang = localStorage.getItem("salvageCalcLang") || "fr";
 let currentTheme = localStorage.getItem("salvageCalcTheme") || "neon";
@@ -469,8 +540,18 @@ const i18n = {
       <span class="leaderboard-line-meta">
         ${runs} runs · Ship fav : ${favShip} · Total RMC : ${totalRmc} SCU
       </span>`,
-    leaderboardYou: "Vous",
-    labelShipSelect: "Vaisseau utilisé pour ce run",
+        leaderboardYou: "Vous",
+    leaderboardSortLabel: "Tri :",
+    leaderboardFilterLabel: "Filtre vaisseau :",
+    leaderboardSortProfit: "Profit total",
+    leaderboardSortRuns: "Nombre de runs",
+    leaderboardSortName: "Pseudo",
+    leaderboardFilterAll: "Tous les vaisseaux",
+    leaderboardFilterVulture: "Vulture",
+    leaderboardFilterSalvation: "Salvation",
+    leaderboardFilterFortune: "Fortune",
+    leaderboardFilterReclaimer: "Reclaimer",
+labelShipSelect: "Vaisseau utilisé pour ce run",
     saveRunBtn: "Envoyer ce run au leaderboard en ligne",
     saveRunSuccess: "Run envoyé au leaderboard en ligne.",
     saveRunNoUser: "Crée ou importe un profil avant d'enregistrer un run.",
@@ -546,8 +627,18 @@ const i18n = {
     leaderboardErrorPrefix: "Leaderboard error: ",
     leaderboardLine: (nickname, runs, profit, favShip, totalRmc, isAdmin) =>
       `<span class="leaderboard-line-main">${nickname} – ${profit} aUEC</span><span class="leaderboard-line-meta">${runs} runs · Fav ship: ${favShip} · Total RMC: ${totalRmc} SCU</span>`,
-    leaderboardYou: "You",
-    labelShipSelect: "Ship used for this run",
+        leaderboardYou: "You",
+    leaderboardSortLabel: "Sort:",
+    leaderboardFilterLabel: "Ship filter:",
+    leaderboardSortProfit: "Total profit",
+    leaderboardSortRuns: "Run count",
+    leaderboardSortName: "Nickname",
+    leaderboardFilterAll: "All ships",
+    leaderboardFilterVulture: "Vulture",
+    leaderboardFilterSalvation: "Salvation",
+    leaderboardFilterFortune: "Fortune",
+    leaderboardFilterReclaimer: "Reclaimer",
+labelShipSelect: "Ship used for this run",
     saveRunBtn: "Send this run to the online leaderboard",
     saveRunSuccess: "Run sent to the online leaderboard.",
     saveRunNoUser: "Please create/import a profile before saving a run.",
@@ -641,6 +732,10 @@ const clearAllRunsBtnEl = document.getElementById("clearAllRunsBtn");
 const resetOnlineBtnEl = document.getElementById("resetOnlineBtn");
 const leaderboardActionMsgEl = document.getElementById("leaderboardActionMsg");
 const leaderboardSubEl = document.getElementById("leaderboardSub");
+const leaderboardSortSelectEl = document.getElementById("leaderboardSortSelect");
+const leaderboardShipFilterEl = document.getElementById("leaderboardShipFilter");
+const leaderboardSortLabelEl = document.getElementById("leaderboardSortLabel");
+const leaderboardShipFilterLabelEl = document.getElementById("leaderboardShipFilterLabel");
 
 const toggleMyRunsBtnEl = document.getElementById("toggleMyRunsBtn");
 const myRunsPanelEl = document.getElementById("myRunsPanel");
@@ -978,12 +1073,7 @@ function renderOnlineLeaderboard(users, t) {
     onlineLeaderboardFullEmptyEl.style.display = "none";
   }
 
-  const sorted = users.slice().sort((a, b) => {
-    if ((b.totalProfit || 0) !== (a.totalProfit || 0)) {
-      return (b.totalProfit || 0) - (a.totalProfit || 0);
-    }
-    return (b.totalRuns || 0) - (a.totalRuns || 0);
-  });
+  const sorted = getFilteredSortedLeaderboardUsers(users);
 
   // --- TOP 3 (page principale) ---
   leaderboardListEl.innerHTML = "";
@@ -1620,6 +1710,37 @@ function applyLanguage() {
   clearMyRunsBtnEl.textContent = t.clearMyRunsBtn;
   clearAllRunsBtnEl.textContent = t.clearAllRunsBtn;
 
+  if (leaderboardSortLabelEl) {
+    leaderboardSortLabelEl.textContent = t.leaderboardSortLabel;
+  }
+  if (leaderboardShipFilterLabelEl) {
+    leaderboardShipFilterLabelEl.textContent = t.leaderboardFilterLabel;
+  }
+
+  if (leaderboardSortSelectEl) {
+    const optProfit = leaderboardSortSelectEl.querySelector('option[value="profit"]');
+    const optRuns = leaderboardSortSelectEl.querySelector('option[value="runs"]');
+    const optName = leaderboardSortSelectEl.querySelector('option[value="name"]');
+    if (optProfit) optProfit.textContent = t.leaderboardSortProfit;
+    if (optRuns) optRuns.textContent = t.leaderboardSortRuns;
+    if (optName) optName.textContent = t.leaderboardSortName;
+    leaderboardSortSelectEl.value = leaderboardSortKey;
+  }
+
+  if (leaderboardShipFilterEl) {
+    const optAll = leaderboardShipFilterEl.querySelector('option[value="all"]');
+    const optVulture = leaderboardShipFilterEl.querySelector('option[value="vulture"]');
+    const optSalvation = leaderboardShipFilterEl.querySelector('option[value="salvation"]');
+    const optFortune = leaderboardShipFilterEl.querySelector('option[value="fortune"]');
+    const optReclaimer = leaderboardShipFilterEl.querySelector('option[value="reclaimer"]');
+    if (optAll) optAll.textContent = t.leaderboardFilterAll;
+    if (optVulture) optVulture.textContent = t.leaderboardFilterVulture;
+    if (optSalvation) optSalvation.textContent = t.leaderboardFilterSalvation;
+    if (optFortune) optFortune.textContent = t.leaderboardFilterFortune;
+    if (optReclaimer) optReclaimer.textContent = t.leaderboardFilterReclaimer;
+    leaderboardShipFilterEl.value = leaderboardShipFilterKey;
+  }
+
   if (leaderboardSubEl) {
     leaderboardSubEl.textContent = t.leaderboardSub;
   }
@@ -2116,6 +2237,22 @@ if (openOnlineLeaderboardBtnEl && onlineLeaderboardModalEl) {
       if (e.target === onlineLeaderboardModalEl) {
         closeOnlineLeaderboardModal();
       }
+    });
+  }
+
+
+  if (leaderboardSortSelectEl) {
+    leaderboardSortSelectEl.addEventListener("change", () => {
+      leaderboardSortKey = leaderboardSortSelectEl.value || "profit";
+      localStorage.setItem("salvageLbSort", leaderboardSortKey);
+      rerenderOnlineLeaderboardFromCache();
+    });
+  }
+  if (leaderboardShipFilterEl) {
+    leaderboardShipFilterEl.addEventListener("change", () => {
+      leaderboardShipFilterKey = leaderboardShipFilterEl.value || "all";
+      localStorage.setItem("salvageLbShipFilter", leaderboardShipFilterKey);
+      rerenderOnlineLeaderboardFromCache();
     });
   }
 
