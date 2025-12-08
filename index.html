@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.0 -->
+<!-- Version : V6.4.1 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -50,8 +50,8 @@
     </div>
     <div class="activity-switcher">
       <button class="activity-pill active" data-activity="salvage" id="activitySalvageBtn">Salvage</button>
-      <button class="activity-pill disabled" data-activity="hauling" id="activityHaulingBtn">Hauling</button>
-      <button class="activity-pill disabled" data-activity="mining" id="activityMiningBtn">Mining</button>
+      <button class="activity-pill" data-activity="hauling" id="activityHaulingBtn">Hauling</button>
+      <button class="activity-pill" data-activity="mining" id="activityMiningBtn">Mining</button>
     </div>
 
     <section id="activity-salvage" class="activity-panel active">
@@ -455,7 +455,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.0";
+const APP_VERSION = "V6.4.1";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -2257,13 +2257,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setActivity(initialActivity);
 
-  if (activitySalvageBtn && !activitySalvageBtn.classList.contains("disabled")) {
+  if (activitySalvageBtn) {
     activitySalvageBtn.addEventListener("click", () => setActivity("salvage"));
   }
-  if (activityHaulingBtn && !activityHaulingBtn.classList.contains("disabled")) {
+  if (activityHaulingBtn) {
     activityHaulingBtn.addEventListener("click", () => setActivity("hauling"));
   }
-  if (activityMiningBtn && !activityMiningBtn.classList.contains("disabled")) {
+  if (activityMiningBtn) {
     activityMiningBtn.addEventListener("click", () => setActivity("mining"));
   }
 
