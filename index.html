@@ -275,28 +275,20 @@
         </div>
 
         <div class="panel" id="sellZonesPanel">
-          <div id="sellZonesTitle" class="panel-title">Zones recommandées pour vendre RMC &amp; CMAT</div>
+          <div id="sellZonesTitle" class="panel-title">Top 3 ventes RMC &amp; CMAT</div>
 
           <div class="result-block">
-            <div id="rmcSellHead" class="result-head">Top 3 zones – Vente RMC</div>
-            <div class="result-values" id="rmcSellList">
-              1. Commodity Terminal – Seer's Canyon (Daymar)<br>
-              2. Autres terminaux de marchandises selon ta route<br>
-              3. Points de vente industriels RMC (stations Lagrange / avant-postes)
-            </div>
+            <div class="result-head">Top 3 – RMC</div>
+            <ul id="marketTop3RmcList" class="top3-list"></ul>
           </div>
 
           <div class="result-block">
-            <div id="cmatSellHead" class="result-head">Top 3 zones – Vente CMAT</div>
-            <div class="result-values" id="cmatSellList">
-              1. Admin – Port Tressler (microTech)<br>
-              2. Autres terminaux Admin gérant les matériaux de construction<br>
-              3. Hubs orbitaux avec forte demande de matériaux
-            </div>
+            <div class="result-head">Top 3 – CMAT</div>
+            <ul id="marketTop3CmatList" class="top3-list"></ul>
           </div>
 
           <div class="small-note" id="sellZonesNote">
-            Ces recommandations sont indicatives et peuvent varier en fonction des patchs et des équilibrages économiques.
+            Ces informations proviennent en temps réel de ton Worker (UEX) et reflètent les meilleurs terminaux de vente actuels.
           </div>
         </div>
 
@@ -313,22 +305,6 @@
         <div class="market-graph-col">
           <canvas id="cmatChart" height="120"></canvas>
           <div id="graphMessage"></div>
-
-          <div id="marketTop3" class="market-top3">
-            <div class="market-top3-row">
-              <div class="market-top3-block">
-                <div id="marketTop3RmcTitle" class="market-top3-title">Top 3 – RMC</div>
-                <ul id="marketTop3RmcList" class="top3-list"></ul>
-              </div>
-              <div class="market-top3-block">
-                <div id="marketTop3CmatTitle" class="market-top3-title">Top 3 – CMAT</div>
-                <ul id="marketTop3CmatList" class="top3-list"></ul>
-              </div>
-            </div>
-            <div id="marketTop3Legend" class="market-top3-legend">
-              Icônes : 📦 Terminal marchandises · ⛏️ Avant-poste minier · 🏭 Raffinerie · 🏢 Bureau Admin.
-            </div>
-          </div>
         </div>
 
         <div class="leaderboard-panel">
@@ -839,7 +815,6 @@ const marketTop3RmcTitleEl = document.getElementById("marketTop3RmcTitle");
 const marketTop3CmatTitleEl = document.getElementById("marketTop3CmatTitle");
 const marketTop3RmcListEl = document.getElementById("marketTop3RmcList");
 const marketTop3CmatListEl = document.getElementById("marketTop3CmatList");
-const marketTop3LegendEl = document.getElementById("marketTop3Legend");
 
 const titleMainEl = document.getElementById("titleMain");
 const subTextEl = document.getElementById("subText");
