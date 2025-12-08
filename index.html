@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.1 -->
+<!-- Version : V6.4.2 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -18,7 +18,54 @@
   <meta name="twitter:description" content="Determine your salvage value per RMC or CMAT loop with live UEX prices.">
   <meta name="twitter:image" content="https://shog-sc.github.io/salvage-calc/icon.png">
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+// --- Anti-spam Save Run (30s) ---
+const SUBMIT_COOLDOWN_MS = 30000;
+let lastRunSubmitTime = 0;
+let antiSpamIntervalId = null;
+
+function updateAntiSpamMessage(remainingMs) {
+  const el = document.getElementById("antiSpamMessage");
+  if (!el) return;
+  if (remainingMs <= 0) { el.textContent = ""; return; }
+  const s = Math.ceil(remainingMs / 1000);
+  el.textContent = `⚠ Anti-Spam : ${s}s restantes`;
+}
+
+function startAntiSpamCountdown() {
+  if (antiSpamIntervalId) clearInterval(antiSpamIntervalId);
+  const target = lastRunSubmitTime + SUBMIT_COOLDOWN_MS;
+  antiSpamIntervalId = setInterval(() => {
+    const rem = target - Date.now();
+    if (rem <= 0) {
+      clearInterval(antiSpamIntervalId);
+      antiSpamIntervalId = null;
+      updateAntiSpamMessage(0);
+    } else updateAntiSpamMessage(rem);
+  }, 1000);
+}
+
+// Wrap existing saveRunBtn action
+const originalSaveRun = typeof onSaveRun === 'function' ? onSaveRun : null;
+async function onSaveRunWrapped() {
+  const now = Date.now();
+  const elapsed = now - lastRunSubmitTime;
+  if (elapsed < SUBMIT_COOLDOWN_MS) {
+    const remaining = SUBMIT_COOLDOWN_MS - elapsed;
+    updateAntiSpamMessage(remaining);
+    startAntiSpamCountdown();
+    return;
+  }
+  lastRunSubmitTime = now;
+  updateAntiSpamMessage(0);
+  if (antiSpamIntervalId) { clearInterval(antiSpamIntervalId); antiSpamIntervalId = null; }
+  if (originalSaveRun) return originalSaveRun();
+}
+
+// attach
+document.getElementById("saveRunBtn")?.addEventListener("click", onSaveRunWrapped);
+
+</script>
 
   
   <link rel="stylesheet" href="assets/css/style.css">
@@ -193,6 +240,8 @@
         <button id="saveRunBtn" class="save-run-btn" type="button">
           Envoyer ce run au leaderboard en ligne
         </button>
+<div id="antiSpamMessage" class="anti-spam-message"></div>
+
         <div id="saveRunMessage" class="small-note"></div>
 
         <div class="tag-row">
@@ -455,7 +504,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.1";
+const APP_VERSION = "V6.4.2";
 
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
@@ -2337,6 +2386,53 @@ const verPill = document.getElementById("app-version-pill");
   updateScuAdvancedVisibility();
   refreshDebutantPrices();
 });
+
+// --- Anti-spam Save Run (30s) ---
+const SUBMIT_COOLDOWN_MS = 30000;
+let lastRunSubmitTime = 0;
+let antiSpamIntervalId = null;
+
+function updateAntiSpamMessage(remainingMs) {
+  const el = document.getElementById("antiSpamMessage");
+  if (!el) return;
+  if (remainingMs <= 0) { el.textContent = ""; return; }
+  const s = Math.ceil(remainingMs / 1000);
+  el.textContent = `⚠ Anti-Spam : ${s}s restantes`;
+}
+
+function startAntiSpamCountdown() {
+  if (antiSpamIntervalId) clearInterval(antiSpamIntervalId);
+  const target = lastRunSubmitTime + SUBMIT_COOLDOWN_MS;
+  antiSpamIntervalId = setInterval(() => {
+    const rem = target - Date.now();
+    if (rem <= 0) {
+      clearInterval(antiSpamIntervalId);
+      antiSpamIntervalId = null;
+      updateAntiSpamMessage(0);
+    } else updateAntiSpamMessage(rem);
+  }, 1000);
+}
+
+// Wrap existing saveRunBtn action
+const originalSaveRun = typeof onSaveRun === 'function' ? onSaveRun : null;
+async function onSaveRunWrapped() {
+  const now = Date.now();
+  const elapsed = now - lastRunSubmitTime;
+  if (elapsed < SUBMIT_COOLDOWN_MS) {
+    const remaining = SUBMIT_COOLDOWN_MS - elapsed;
+    updateAntiSpamMessage(remaining);
+    startAntiSpamCountdown();
+    return;
+  }
+  lastRunSubmitTime = now;
+  updateAntiSpamMessage(0);
+  if (antiSpamIntervalId) { clearInterval(antiSpamIntervalId); antiSpamIntervalId = null; }
+  if (originalSaveRun) return originalSaveRun();
+}
+
+// attach
+document.getElementById("saveRunBtn")?.addEventListener("click", onSaveRunWrapped);
+
 </script>
 
 </body>
