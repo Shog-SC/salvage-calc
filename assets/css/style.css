@@ -1,4 +1,4 @@
-/* Salvage Calculator 4.4 - Styles V6.2.1 (leaderboard + form polish) */
+/* Salvage Calculator 4.4 - Styles V6.2.2 (leaderboard + form inputs align) */
 
     :root {
       --bg: #020710;
@@ -1573,6 +1573,12 @@ body.theme-light {
 
 /* V6.2.1 – Debutant SCU CS input width tweak */
 #scuCsDeb {
-  width: 260px;
+  width: 280px;
+  max-width: 100%;
+}
+
+/* V6.2.2 – Standard input width for Entrées panel */
+.input-standard {
+  width: 280px;
   max-width: 100%;
 }
