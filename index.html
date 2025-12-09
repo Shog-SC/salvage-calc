@@ -59,6 +59,16 @@
     }
   </style>
 
+
+  <style>
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -2099,6 +2109,28 @@ if (changeUserBtn) {
 
 if (discordLoginBtn) {
   discordLoginBtn.addEventListener("click", () => {
+    // Vérifie si un utilisateur Discord est déjà connecté
+    let hasDiscord = false;
+    try {
+      const rawDiscord = localStorage.getItem("salvageDiscordUser");
+      if (rawDiscord) {
+        const du = JSON.parse(rawDiscord);
+        if (du && du.id) {
+          hasDiscord = true;
+        }
+      }
+    } catch (_) {
+      hasDiscord = false;
+    }
+
+    if (hasDiscord) {
+      // Déconnexion Discord : on supprime l'entrée et on met à jour l'UI
+      localStorage.removeItem("salvageDiscordUser");
+      updateUserUI();
+      return;
+    }
+
+    // Pas encore connecté : on lance le flow Discord
     window.location.href = "https://salvage-auth.yoyoastico74.workers.dev/auth/discord/login";
   });
 }
