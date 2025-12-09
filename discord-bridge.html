@@ -75,6 +75,33 @@
         statusEl.classList.add("error");
       }
 
+      function decodeBase64Utf8(b64) {
+        // Accepte base64 "classique", base64 URL-safe, et + transformés en espaces
+        let normalized = (b64 || "")
+          .trim()
+          .replace(/ /g, "+")  // certains parseurs transforment + en espace
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        // Ajoute le padding manquant si besoin
+        while (normalized.length % 4 !== 0) {
+          normalized += "=";
+        }
+
+        const binary = atob(normalized);
+        // Décodage UTF-8
+        try {
+          return decodeURIComponent(
+            Array.prototype.map
+              .call(binary, (c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+        } catch (e) {
+          // Fallback simple si problème d'UTF-8
+          return binary;
+        }
+      }
+
       try {
         const params = new URLSearchParams(window.location.search);
         const d = params.get("d");
@@ -86,8 +113,9 @@
 
         let jsonStr;
         try {
-          jsonStr = atob(d);
+          jsonStr = decodeBase64Utf8(d);
         } catch (e) {
+          console.error(e);
           fail("Impossible de décoder les données de connexion. (Base64 invalide)");
           return;
         }
@@ -96,6 +124,7 @@
         try {
           data = JSON.parse(jsonStr);
         } catch (e) {
+          console.error(e);
           fail("Données de connexion illisibles. (JSON invalide)");
           return;
         }
@@ -106,7 +135,7 @@
           username: data.username || null,
           avatar: data.avatar || null,
           source: "discord",
-          ts: Date.now()
+          ts: Date.now(),
         };
 
         if (!user.id) {
@@ -118,7 +147,7 @@
           localStorage.setItem("salvageDiscordUser", JSON.stringify(user));
         } catch (e) {
           console.error("localStorage error", e);
-          // On continue quand même, mais on prévient l'utilisateur
+          // On continue quand même
         }
 
         statusEl.textContent = "Connexion Discord réussie. Redirection vers salvage…";
