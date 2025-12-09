@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.7 -->
+<!-- Version : V6.4.8 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -532,7 +532,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.7";
+const APP_VERSION = "V6.4.8";
 const ACTIVITY_VERSIONS = {
   salvage: { label: "Salvage", version: "V6.4.4" },
   hauling: { label: "Hauling", version: "V0.0" },
@@ -860,12 +860,6 @@ const debTopRmcLabelEl = document.getElementById("debTopRmcLabel");
 const debTopCmatLabelEl = document.getElementById("debTopCmatLabel");
 const debTopRmcEl = document.getElementById("debTopRmc");
 const debTopCmatEl = document.getElementById("debTopCmat");
-const top3RmcTitleEl = document.getElementById("top3RmcTitle");
-const top3CmatTitleEl = document.getElementById("top3CmatTitle");
-const top3RmcListEl = document.getElementById("top3RmcList");
-const top3CmatListEl = document.getElementById("top3CmatList");
-const marketTop3RmcTitleEl = document.getElementById("marketTop3RmcTitle");
-const marketTop3CmatTitleEl = document.getElementById("marketTop3CmatTitle");
 const marketTop3RmcListEl = document.getElementById("marketTop3RmcList");
 const marketTop3CmatListEl = document.getElementById("marketTop3CmatList");
 
@@ -2373,8 +2367,6 @@ function updateTop3UIFromData(data) {
   lastTop3Rmc = rmcTop;
   lastTop3Cmat = cmatTop;
 
-  if (top3RmcListEl) renderTop3List(top3RmcListEl, rmcTop);
-  if (top3CmatListEl) renderTop3List(top3CmatListEl, cmatTop);
   if (marketTop3RmcListEl) renderTop3List(marketTop3RmcListEl, rmcTop);
   if (marketTop3CmatListEl) renderTop3List(marketTop3CmatListEl, cmatTop);
 
