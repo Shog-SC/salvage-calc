@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.8k -->
+<!-- Version : V6.4.6 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -57,66 +57,43 @@
       box-shadow: 0 0 8px rgba(22,163,74,0.7);
       cursor: default;
     }
-  
-    .neon-label {
-      color: var(--text-primary);
-      text-shadow: 0 0 8px rgba(0, 255, 255, 0.65), 0 0 14px rgba(0, 255, 255, 0.45);
-      font-weight: 500;
-    }
-    .user-connected-badge {
-      background: rgba(0, 255, 180, 0.15);
-      border: 1px solid rgba(0, 255, 180, 0.5);
-      padding: 4px 12px;
-      border-radius: 999px;
-      color: #00ffcc;
-      font-weight: 600;
-      text-shadow: 0 0 6px rgba(0, 255, 200, 0.7);
-      box-shadow: 0 0 12px rgba(0, 255, 200, 0.4);
-    }
-</style>
+  </style>
 
 
   <style>
-    .header-main {
+    .top-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 8px;
-    }
-    .header-main #titleMain {
-      flex: 1;
-      text-align: center;
-      margin: 0;
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-left: auto;
     }
   </style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
   <div class="container">
-    <div class="header-main">
-      <h1 id="titleMain">SALVAGE CALCULATOR 4.4</h1>
-
-      <div class="header-right">
-        <div class="lang-switch">
-          <span id="langSwitchLabel" class="neon-label">Langue :</span>
-          <select id="langSelect">
-            <option value="fr">FR</option>
-            <option value="en">EN</option>
-          </select>
-        </div>
-        <div class="top-bar-user">
-          <button id="discordLoginBtn" type="button">Connexion Discord</button>
-        </div>
+    <div class="top-bar">
+      <div class="theme-switch">
+        <label for="themeSelect">Thème :</label>
+        <select id="themeSelect">
+          <option value="neon">Neon</option>
+                    <option value="light">Light</option>
+        </select>
+      </div>
+      <div class="lang-switch">
+        <span id="langSwitchLabel">Langue :</span>
+        <select id="langSelect">
+          <option value="fr">FR</option>
+          <option value="en">EN</option>
+        </select>
+      </div>
+      <div class="top-bar-user">
+        <button id="discordLoginBtn" type="button">Connexion Discord</button>
       </div>
     </div>
+
+    <h1 id="titleMain">SALVAGE CALCULATOR 4.4</h1>
     <div id="subText" class="sub">
       Détermine la valeur générée par ton salvage selon la boucle de ton vaisseau (RMC ou CMAT).
     </div>
@@ -141,7 +118,11 @@
       </div>
     </div>
 
-    
+    <div class="user-box">
+      <span id="userInfo">Profil : —</span>
+      <button id="changeUserBtn" type="button">Gérer mon profil</button>
+    </div>
+
     
     <div class="mode-toggle">
       <button id="btnModeDebutant" class="mode-btn active">Mode Débutant</button>
@@ -278,59 +259,8 @@
         <div id="smallNote" class="small-note">
           Light ships → RMC. Reclaimer → CMAT (~15 %, raffinage obligatoire).
         </div>
-        <div id="apiStatus" class="api-status">Récupération des prix UEX…</div><ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
-            <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
-              Aucun run en ligne pour l'instant.
-            </div>
-            
-          </div>
-
-                </div>
-
-<div class="leaderboard-panel">
-
-
-
-
-          <div id="leaderboardTop3Box" class="leaderboard-top3-box">
-            <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
-            
-
-          <div class="leaderboard-title-row">
-            <div class="leaderboard-title">Leaderboard – Salvage (online)</div>
-            <div class="leaderboard-badges">
-              <span class="badge-local-beta">Online Beta</span>
-            </div>
-          </div>
-          <div id="leaderboardSub" class="leaderboard-sub">
-            Classement basé sur le nombre de runs et les bénéfices théoriques (local au navigateur pour l’instant).
-          </div>
-
-          <button id="toggleMyRunsBtn" type="button" class="my-runs-btn">Voir mes runs détaillés</button>
-          <div id="myRunsPanel" class="my-runs-panel">
-            <div id="myRunsTitle" class="my-runs-title">Mes runs enregistrés</div>
-
-            <div class="my-runs-section">
-              <div id="myRunsActiveTitle" class="my-runs-subtitle">En attente de vente</div>
-              <ul id="myRunsActiveList" class="my-runs-list"></ul>
-              <div id="myRunsActiveEmpty" class="my-runs-empty">Aucun run en attente de vente.</div>
-            </div>
-
-            <div class="my-runs-section">
-              <div id="myRunsSoldTitle" class="my-runs-subtitle">Runs vendus</div>
-              <ul id="myRunsSoldList" class="my-runs-list"></ul>
-              <div id="myRunsSoldEmpty" class="my-runs-empty">Aucun run vendu pour l'instant.</div>
-            </div>
-          </div>
-<div class="leaderboard-actions">
-            <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
-            <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
-            <button id="resetOnlineBtn" type="button" style="display:none; width:100%; margin-top:0.35rem;">
-              Reset leaderboard online (admin)
-            </button>
-            <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
-          </div>
-
+        <div id="apiStatus" class="api-status">Récupération des prix UEX…</div>
+      </div>
 
       <div class="results-grid">
         <div class="panel">
@@ -376,8 +306,6 @@
 
           <div class="reclaimer-flow">
             <div class="reclaimer-flow-title">Schéma de la boucle Reclaimer :</div>
-
-        </div>
             <div class="reclaimer-flow-steps">
               <span>Reclaimer</span> → <span>Construction Salvage (CS)</span> → <span>Raffinage</span> → <span>Construction Materials (CMAT)</span> → <span>Vente</span>
             </div>
@@ -417,7 +345,52 @@
           <div id="graphMessage"></div>
         </div>
 
-                </div>
+        <div class="leaderboard-panel">
+          <div class="leaderboard-title-row">
+            <div class="leaderboard-title">Leaderboard – Salvage (online)</div>
+            <div class="leaderboard-badges">
+              <span class="badge-local-beta">Online Beta</span>
+            </div>
+          </div>
+          <div id="leaderboardSub" class="leaderboard-sub">
+            Classement basé sur le nombre de runs et les bénéfices théoriques (local au navigateur pour l’instant).
+          </div>
+
+          <button id="toggleMyRunsBtn" type="button" class="my-runs-btn">Voir mes runs détaillés</button>
+          <div id="myRunsPanel" class="my-runs-panel">
+            <div id="myRunsTitle" class="my-runs-title">Mes runs enregistrés</div>
+
+            <div class="my-runs-section">
+              <div id="myRunsActiveTitle" class="my-runs-subtitle">En attente de vente</div>
+              <ul id="myRunsActiveList" class="my-runs-list"></ul>
+              <div id="myRunsActiveEmpty" class="my-runs-empty">Aucun run en attente de vente.</div>
+            </div>
+
+            <div class="my-runs-section">
+              <div id="myRunsSoldTitle" class="my-runs-subtitle">Runs vendus</div>
+              <ul id="myRunsSoldList" class="my-runs-list"></ul>
+              <div id="myRunsSoldEmpty" class="my-runs-empty">Aucun run vendu pour l'instant.</div>
+            </div>
+          </div>
+
+          <div id="leaderboardTop3Box" class="leaderboard-top3-box">
+            <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
+            <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
+            <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
+              Aucun run en ligne pour l'instant.
+            </div>
+            
+          </div>
+
+          <div class="leaderboard-actions">
+            <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
+            <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
+            <button id="resetOnlineBtn" type="button" style="display:none; width:100%; margin-top:0.35rem;">
+              Reset leaderboard online (admin)
+            </button>
+            <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -555,7 +528,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.8k";
+const APP_VERSION = "V6.4.6";
 const ACTIVITY_VERSIONS = {
   salvage: { label: "Salvage", version: "V6.4.4" },
   hauling: { label: "Hauling", version: "V0.0" },
@@ -679,9 +652,6 @@ const i18n = {
     labelScuReclaimer: "SCU de salvage traitées – Reclaimer (valeur BRUTE récoltée, avant raffinage RMC → CMAT).",
     tagLight: "Vaisseaux légers : hull scraping → RMC uniquement",
     tagReclaimer: "Reclaimer : Hull Scraping → RMC vendable · Construction Salvage → CMAT (~15 %, raffinage obligatoire).",
-    nav_salvage: "Recyclage",
-    nav_hauling: "Fret",
-    nav_mining: "Mining",
     smallNote: "Pour chaque SCU saisie:\n- Light ships : RMC uniquement (hull scraping).\n- Reclaimer : RMC pour le hull scraping, CMAT (~15 %) pour le Construction Salvage (raffinage obligatoire, pas de vente directe du RMC CS).",
     apiFetching: "Récupération des prix UEX…",
     apiErrorPrefix: "Erreur API : ",
@@ -775,9 +745,6 @@ labelShipSelect: "Vaisseau utilisé pour ce run",
     labelScuReclaimer: "Processed salvage SCU – Reclaimer (RAW amount harvested, before refining RMC → CMAT).",
     tagLight: "Light salvage ships: hull scraping → RMC only",
     tagReclaimer: "Reclaimer: Hull Scraping → sellable RMC · Construction Salvage → CMAT (~15%, refining required).",
-    nav_salvage: "Salvage",
-    nav_hauling: "Hauling",
-    nav_mining: "Mining",
     smallNote: "For each SCU value:\n- Light ships: RMC only (hull scraping).\n- Reclaimer: RMC for hull scraping, CMAT (~15%) for Construction Salvage (refining required, no direct sale of CS RMC).",
     apiFetching: "Fetching UEX prices…",
     apiErrorPrefix: "API error: ",
@@ -1045,36 +1012,48 @@ function saveUserProfile(user) {
 }
 
 function updateUserUI() {
-  // Met à jour uniquement le bouton Discord (le bloc profil n'est plus utilisé)
+  if (!userInfoEl) return;
 
   let discordUser = null;
 
+  // Tente de récupérer l'utilisateur Discord depuis le localStorage
   try {
     const rawDiscord = localStorage.getItem("salvageDiscordUser");
     if (rawDiscord) {
       discordUser = JSON.parse(rawDiscord);
     }
   } catch (_) {
-    // ignore
+    // ignore storage / JSON errors
   }
 
   const discordBtn = typeof discordLoginBtn !== "undefined" ? discordLoginBtn : null;
 
   if (discordUser && discordUser.nickname) {
+    // Affichage dans la zone profil
+    userInfoEl.textContent = "Connecté via Discord : " + discordUser.nickname;
+
+    // Mise à jour du bouton dans la top-bar
     if (discordBtn) {
       discordBtn.textContent = "Connecté : " + discordUser.nickname;
       discordBtn.classList.add("connected");
-      discordBtn.classList.add("user-connected-badge");
-      discordBtn.disabled = false;
+      discordBtn.disabled = true;
     }
     return;
   }
 
+  // Si pas d'utilisateur Discord, on remet le bouton en mode connexion
   if (discordBtn) {
     discordBtn.textContent = "Connexion Discord";
     discordBtn.classList.remove("connected");
-    discordBtn.classList.remove("user-connected-badge");
     discordBtn.disabled = false;
+  }
+
+  // Fallback : ancien système de profil local
+  if (!currentUser) {
+    userInfoEl.textContent = "Profil : —";
+  } else {
+    userInfoEl.textContent =
+      "Profil : " + currentUser.nickname + " (clé : " + currentUser.secret + ")";
   }
 }
 function setActiveModalTab(tab) {
@@ -1894,7 +1873,7 @@ function applyTheme() {
     body.classList.add("theme-neon");
     currentTheme = "neon";
   }
-  if (themeSelectEl) themeSelectEl.value = currentTheme;
+  themeSelectEl.value = currentTheme;
 }
 
 function applyLanguage() {
@@ -1981,21 +1960,6 @@ function applyLanguage() {
   }
   if (myRunsSoldEmptyEl) {
     myRunsSoldEmptyEl.textContent = t.myRunsSoldEmpty;
-  }
-
-
-  // Activity buttons labels
-  const activitySalvageBtn = document.getElementById("activitySalvageBtn");
-  const activityHaulingBtn = document.getElementById("activityHaulingBtn");
-  const activityMiningBtn = document.getElementById("activityMiningBtn");
-  if (activitySalvageBtn && t.nav_salvage) {
-    activitySalvageBtn.textContent = t.nav_salvage;
-  }
-  if (activityHaulingBtn && t.nav_hauling) {
-    activityHaulingBtn.textContent = t.nav_hauling;
-  }
-  if (activityMiningBtn && t.nav_mining) {
-    activityMiningBtn.textContent = t.nav_mining;
   }
 
   if (appVersionEl) {
@@ -2130,6 +2094,13 @@ langSelectEl.addEventListener("change", () => {
   saveState();
   applyLanguage();
   myRunsPanelEl.classList.remove("open");
+});
+
+themeSelectEl.addEventListener("change", () => {
+  currentTheme = themeSelectEl.value || "neon";
+  if (currentTheme === "dark") currentTheme = "neon";
+  applyTheme();
+  saveState();
 });
 
 if (changeUserBtn) {
@@ -2491,7 +2462,7 @@ window.addEventListener("load", () => {
   currentTheme = localStorage.getItem("salvageCalcTheme") || currentTheme;
 
   langSelectEl.value = currentLang;
-  if (themeSelectEl) themeSelectEl.value = currentTheme;
+  themeSelectEl.value = currentTheme;
 
   applyTheme();
   ensureUserProfile();
