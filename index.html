@@ -34,22 +34,28 @@
       background: #5865f2;
       border: none;
       color: #fff;
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 0 8px rgba(88,101,242,0.5);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+      box-shadow: 0 0 6px rgba(88,101,242,0.5);
+      white-space: nowrap;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease, opacity 0.1s ease;
     }
     #discordLoginBtn:hover {
       background: #4752c4;
-      box-shadow: 0 0 12px rgba(88,101,242,0.8);
+      box-shadow: 0 0 10px rgba(88,101,242,0.8);
       transform: translateY(-1px);
     }
     #discordLoginBtn:active {
       transform: translateY(0);
       box-shadow: 0 0 4px rgba(88,101,242,0.6);
+    }
+    #discordLoginBtn.connected {
+      background: #16a34a;
+      box-shadow: 0 0 8px rgba(22,163,74,0.7);
+      cursor: default;
     }
   </style>
 
@@ -73,7 +79,7 @@
         </select>
       </div>
       <div class="top-bar-user">
-        <button id="discordLoginBtn" type="button">Se connecter avec Discord</button>
+        <button id="discordLoginBtn" type="button">Connexion Discord</button>
       </div>
     </div>
 
@@ -998,18 +1004,38 @@ function saveUserProfile(user) {
 function updateUserUI() {
   if (!userInfoEl) return;
 
-  // Si un utilisateur Discord est stocké, on l'affiche en priorité
+  let discordUser = null;
+
+  // Tente de récupérer l'utilisateur Discord depuis le localStorage
   try {
     const rawDiscord = localStorage.getItem("salvageDiscordUser");
     if (rawDiscord) {
-      const du = JSON.parse(rawDiscord);
-      if (du && du.nickname) {
-        userInfoEl.textContent = "Connecté via Discord : " + du.nickname;
-        return;
-      }
+      discordUser = JSON.parse(rawDiscord);
     }
   } catch (_) {
     // ignore storage / JSON errors
+  }
+
+  const discordBtn = typeof discordLoginBtn !== "undefined" ? discordLoginBtn : null;
+
+  if (discordUser && discordUser.nickname) {
+    // Affichage dans la zone profil
+    userInfoEl.textContent = "Connecté via Discord : " + discordUser.nickname;
+
+    // Mise à jour du bouton dans la top-bar
+    if (discordBtn) {
+      discordBtn.textContent = "Connecté : " + discordUser.nickname;
+      discordBtn.classList.add("connected");
+      discordBtn.disabled = true;
+    }
+    return;
+  }
+
+  // Si pas d'utilisateur Discord, on remet le bouton en mode connexion
+  if (discordBtn) {
+    discordBtn.textContent = "Connexion Discord";
+    discordBtn.classList.remove("connected");
+    discordBtn.disabled = false;
   }
 
   // Fallback : ancien système de profil local
@@ -1020,7 +1046,6 @@ function updateUserUI() {
       "Profil : " + currentUser.nickname + " (clé : " + currentUser.secret + ")";
   }
 }
-
 function setActiveModalTab(tab) {
   if (tab === "import") {
     tabImportProfile.classList.add("active");
