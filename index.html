@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.8f -->
+<!-- Version : V6.4.8g -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -281,6 +281,53 @@
         <div id="apiStatus" class="api-status">Récupération des prix UEX…</div>
       </div>
 
+<div class="leaderboard-panel">
+          <div class="leaderboard-title-row">
+            <div class="leaderboard-title">Leaderboard – Salvage (online)</div>
+            <div class="leaderboard-badges">
+              <span class="badge-local-beta">Online Beta</span>
+            </div>
+          </div>
+          <div id="leaderboardSub" class="leaderboard-sub">
+            Classement basé sur le nombre de runs et les bénéfices théoriques (local au navigateur pour l’instant).
+          </div>
+
+          <button id="toggleMyRunsBtn" type="button" class="my-runs-btn">Voir mes runs détaillés</button>
+          <div id="myRunsPanel" class="my-runs-panel">
+            <div id="myRunsTitle" class="my-runs-title">Mes runs enregistrés</div>
+
+            <div class="my-runs-section">
+              <div id="myRunsActiveTitle" class="my-runs-subtitle">En attente de vente</div>
+              <ul id="myRunsActiveList" class="my-runs-list"></ul>
+              <div id="myRunsActiveEmpty" class="my-runs-empty">Aucun run en attente de vente.</div>
+            </div>
+
+            <div class="my-runs-section">
+              <div id="myRunsSoldTitle" class="my-runs-subtitle">Runs vendus</div>
+              <ul id="myRunsSoldList" class="my-runs-list"></ul>
+              <div id="myRunsSoldEmpty" class="my-runs-empty">Aucun run vendu pour l'instant.</div>
+            </div>
+          </div>
+
+          <div id="leaderboardTop3Box" class="leaderboard-top3-box">
+            <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
+            <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
+            <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
+              Aucun run en ligne pour l'instant.
+            </div>
+            
+          </div>
+
+          <div class="leaderboard-actions">
+            <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
+            <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
+            <button id="resetOnlineBtn" type="button" style="display:none; width:100%; margin-top:0.35rem;">
+              Reset leaderboard online (admin)
+            </button>
+            <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
+          </div>
+
+
       <div class="results-grid">
         <div class="panel">
           <div id="rmcPanelTitle" class="panel-title">Loop RMC – Vendre en Recycled Material Composite</div>
@@ -326,11 +373,6 @@
           <div class="reclaimer-flow">
             <div class="reclaimer-flow-title">Schéma de la boucle Reclaimer :</div>
 
-          <div class="result-block">
-            <div class="result-head">Top 3 – CMAT</div>
-            <ul id="marketTop3CmatList" class="top3-list"></ul>
-          </div>
-
         </div>
             <div class="reclaimer-flow-steps">
               <span>Reclaimer</span> → <span>Construction Salvage (CS)</span> → <span>Raffinage</span> → <span>Construction Materials (CMAT)</span> → <span>Vente</span>
@@ -346,6 +388,10 @@
             <ul id="marketTop3RmcList" class="top3-list"></ul>
           </div>
 
+          <div class="result-block">
+            <div class="result-head">Top 3 – CMAT</div>
+            <ul id="marketTop3CmatList" class="top3-list"></ul>
+          </div>
 
           <div class="small-note" id="sellZonesNote">
             Ces informations proviennent en temps réel de ton Worker (UEX) et reflètent les meilleurs terminaux de vente actuels.
@@ -367,52 +413,7 @@
           <div id="graphMessage"></div>
         </div>
 
-        <div class="leaderboard-panel">
-          <div class="leaderboard-title-row">
-            <div class="leaderboard-title">Leaderboard – Salvage (online)</div>
-            <div class="leaderboard-badges">
-              <span class="badge-local-beta">Online Beta</span>
-            </div>
-          </div>
-          <div id="leaderboardSub" class="leaderboard-sub">
-            Classement basé sur le nombre de runs et les bénéfices théoriques (local au navigateur pour l’instant).
-          </div>
-
-          <button id="toggleMyRunsBtn" type="button" class="my-runs-btn">Voir mes runs détaillés</button>
-          <div id="myRunsPanel" class="my-runs-panel">
-            <div id="myRunsTitle" class="my-runs-title">Mes runs enregistrés</div>
-
-            <div class="my-runs-section">
-              <div id="myRunsActiveTitle" class="my-runs-subtitle">En attente de vente</div>
-              <ul id="myRunsActiveList" class="my-runs-list"></ul>
-              <div id="myRunsActiveEmpty" class="my-runs-empty">Aucun run en attente de vente.</div>
-            </div>
-
-            <div class="my-runs-section">
-              <div id="myRunsSoldTitle" class="my-runs-subtitle">Runs vendus</div>
-              <ul id="myRunsSoldList" class="my-runs-list"></ul>
-              <div id="myRunsSoldEmpty" class="my-runs-empty">Aucun run vendu pour l'instant.</div>
-            </div>
-          </div>
-
-          <div id="leaderboardTop3Box" class="leaderboard-top3-box">
-            <div id="leaderboardTop3Title" class="leaderboard-top3-title">Top 3 global (en ligne)</div>
-            <ul id="leaderboardList" class="leaderboard-list leaderboard-top3-list"></ul>
-            <div id="leaderboardEmpty" class="leaderboard-empty" style="display:none;">
-              Aucun run en ligne pour l'instant.
-            </div>
-            
-          </div>
-
-          <div class="leaderboard-actions">
-            <button id="clearMyRunsBtn" type="button">Supprimer mes runs</button>
-            <button id="clearAllRunsBtn" type="button">Reset complet (local)</button>
-            <button id="resetOnlineBtn" type="button" style="display:none; width:100%; margin-top:0.35rem;">
-              Reset leaderboard online (admin)
-            </button>
-            <div id="leaderboardActionMsg" class="leaderboard-action-msg"></div>
-          </div>
-        </div>
+                </div>
       </div>
     </div>
 
@@ -550,7 +551,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.8f";
+const APP_VERSION = "V6.4.8g";
 const ACTIVITY_VERSIONS = {
   salvage: { label: "Salvage", version: "V6.4.4" },
   hauling: { label: "Hauling", version: "V0.0" },
