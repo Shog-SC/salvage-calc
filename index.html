@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.6 -->
+<!-- Version : V6.4.7 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -69,6 +69,14 @@
       margin-bottom: 8px;
     }
   </style>
+
+  <style>
+    .admin-badge {
+      color: #00eaff;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+  </style>
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -98,9 +106,9 @@
       Détermine la valeur générée par ton salvage selon la boucle de ton vaisseau (RMC ou CMAT).
     </div>
     <div class="activity-switcher">
-      <button class="activity-pill active" data-activity="salvage" id="activitySalvageBtn">Recyclage</button>
-      <button class="activity-pill" data-activity="hauling" id="activityHaulingBtn">Fret</button>
-      <button class="activity-pill" data-activity="mining" id="activityMiningBtn">Minage</button>
+      <button class="activity-pill active" data-activity="salvage" id="activitySalvageBtn">Salvage</button>
+      <button class="activity-pill" data-activity="hauling" id="activityHaulingBtn">Hauling</button>
+      <button class="activity-pill" data-activity="mining" id="activityMiningBtn">Mining</button>
     </div>
 
     <section id="activity-salvage" class="activity-panel active">
@@ -118,10 +126,6 @@
       </div>
     </div>
 
-    <div class="user-box">
-      <span id="userInfo">Profil : —</span>
-      <button id="changeUserBtn" type="button">Gérer mon profil</button>
-    </div>
 
     
     <div class="mode-toggle">
@@ -539,6 +543,11 @@ const ACTIVITY_VERSIONS = {
 const LEADERBOARD_API_BASE = "https://salvage-leaderboard.yoyoastico74.workers.dev";
 const LEADERBOARD_REFRESH_MS = 60000;
 const LEADERBOARD_RUN_COOLDOWN_MS = 30000;
+const ADMIN_DISCORD_IDS = [
+  "225963749364727809",
+  "470293244438249473",
+];
+
 let lastOnlineRunTs = Number(localStorage.getItem("salvageCalcLastOnlineRunTs") || 0);
 let lastLeaderboardFetch = 0;
 let cachedLeaderboardUsers = [];
@@ -1012,7 +1021,8 @@ function saveUserProfile(user) {
 }
 
 function updateUserUI() {
-  if (!userInfoEl) return;
+  // userInfoEl peut être absent si on a retiré l'affichage texte du profil
+  const discordBtn = typeof discordLoginBtn !== "undefined" ? discordLoginBtn : null;
 
   let discordUser = null;
 
@@ -1026,35 +1036,25 @@ function updateUserUI() {
     // ignore storage / JSON errors
   }
 
-  const discordBtn = typeof discordLoginBtn !== "undefined" ? discordLoginBtn : null;
-
-  if (discordUser && discordUser.nickname) {
-    // Affichage dans la zone profil
-    userInfoEl.textContent = "Connecté via Discord : " + discordUser.nickname;
-
-    // Mise à jour du bouton dans la top-bar
-    if (discordBtn) {
-      discordBtn.textContent = "Connecté : " + discordUser.nickname;
-      discordBtn.classList.add("connected");
-      discordBtn.disabled = true;
-    }
-    return;
+  // Si on a un utilisateur Discord, on enrichit avec le flag admin
+  if (discordUser && discordUser.id) {
+    discordUser.isAdmin = ADMIN_DISCORD_IDS.includes(String(discordUser.id));
   }
 
-  // Si pas d'utilisateur Discord, on remet le bouton en mode connexion
+  // Mise à jour du bouton dans la top-bar
   if (discordBtn) {
-    discordBtn.textContent = "Connexion Discord";
-    discordBtn.classList.remove("connected");
-    discordBtn.disabled = false;
+    if (discordUser && discordUser.nickname) {
+      const adminBadge = discordUser.isAdmin ? " [ADMIN]" : "";
+      discordBtn.textContent = "Connecté : " + discordUser.nickname + adminBadge;
+      discordBtn.classList.add("connected");
+      return;
+    } else {
+      discordBtn.textContent = "Connexion Discord";
+      discordBtn.classList.remove("connected");
+    }
   }
 
-  // Fallback : ancien système de profil local
-  if (!currentUser) {
-    userInfoEl.textContent = "Profil : —";
-  } else {
-    userInfoEl.textContent =
-      "Profil : " + currentUser.nickname + " (clé : " + currentUser.secret + ")";
-  }
+  // Si besoin, on pourrait ici mettre à jour d'autres éléments liés au profil local
 }
 function setActiveModalTab(tab) {
   if (tab === "import") {
@@ -2710,4 +2710,3 @@ const verPill = document.getElementById("app-version-pill");
 
 </body>
 </html>
-
