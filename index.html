@@ -23,6 +23,36 @@
   
   <link rel="stylesheet" href="assets/css/style.css">
 
+
+  <style>
+    .top-bar-user {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+    }
+    #discordLoginBtn {
+      background: #5865f2;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(88,101,242,0.5);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    #discordLoginBtn:hover {
+      background: #4752c4;
+      box-shadow: 0 0 12px rgba(88,101,242,0.8);
+      transform: translateY(-1px);
+    }
+    #discordLoginBtn:active {
+      transform: translateY(0);
+      box-shadow: 0 0 4px rgba(88,101,242,0.6);
+    }
+  </style>
+
 </head>
 <body class="theme-neon">
 <div class="overlay">
@@ -41,6 +71,9 @@
           <option value="fr">FR</option>
           <option value="en">EN</option>
         </select>
+      </div>
+      <div class="top-bar-user">
+        <button id="discordLoginBtn" type="button">Se connecter avec Discord</button>
       </div>
     </div>
 
@@ -167,6 +200,17 @@
         <div class="sellpoints">
           <div><span id="sellRmcLabel" class="label">Point de vente RMC :</span> <span id="rmcTerminal">—</span></div>
           <div><span id="sellCmatLabel" class="label">Point de vente CMAT :</span> <span id="cmatTerminal">—</span></div>
+        </div>
+
+        <div class="top3-mini">
+          <div class="top3-mini-col">
+            <div id="top3RmcTitle" class="top3-mini-title">Top 3 – RMC</div>
+            <ul id="top3RmcList" class="top3-list"></ul>
+          </div>
+          <div class="top3-mini-col">
+            <div id="top3CmatTitle" class="top3-mini-title">Top 3 – CMAT</div>
+            <ul id="top3CmatList" class="top3-list"></ul>
+          </div>
         </div>
 
         <label for="shipSelect" id="labelShipSelect">Vaisseau utilisé pour ce run</label>
@@ -861,6 +905,8 @@ const myRunsSoldTitleEl = document.getElementById("myRunsSoldTitle");
 
 const userInfoEl = document.getElementById("userInfo");
 const changeUserBtn = document.getElementById("changeUserBtn");
+
+const discordLoginBtn = document.getElementById("discordLoginBtn");
 
 const profileModal = document.getElementById("profileModal");
 const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -2022,7 +2068,6 @@ if (changeUserBtn) {
   changeUserBtn.addEventListener("click", () => openProfileModal("create"));
 }
 
-const discordLoginBtn = document.getElementById("discordLoginBtn");
 if (discordLoginBtn) {
   discordLoginBtn.addEventListener("click", () => {
     window.location.href = "https://salvage-auth.yoyoastico74.workers.dev/auth/discord/login";
