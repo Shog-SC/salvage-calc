@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version : V6.4.8 -->
+<!-- Version : V6.4.9 -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -110,11 +110,6 @@
       </div>
     </div>
 
-    <div class="user-box">
-      <span id="userInfo">Profil : —</span>
-    </div>
-
-    
     <div class="mode-toggle">
       <button id="btnModeDebutant" class="mode-btn active">Mode Débutant</button>
       <button id="btnModeAvance" class="mode-btn">Mode Avancé</button>
@@ -519,7 +514,7 @@ function toggleMoreInfo() {
 }
 
 const REND_RECLAIMER = 0.15;
-const APP_VERSION = "V6.4.8";
+const APP_VERSION = "V6.4.9";
 const ACTIVITY_VERSIONS = {
   salvage: { label: "Salvage", version: "V6.4.4" },
   hauling: { label: "Hauling", version: "V0.0" },
@@ -1003,8 +998,6 @@ function saveUserProfile(user) {
 }
 
 function updateUserUI() {
-  if (!userInfoEl) return;
-
   let discordUser = null;
 
   // Tente de récupérer l'utilisateur Discord depuis le localStorage
@@ -1020,8 +1013,10 @@ function updateUserUI() {
   const discordBtn = typeof discordLoginBtn !== "undefined" ? discordLoginBtn : null;
 
   if (discordUser && discordUser.nickname) {
-    // Affichage dans la zone profil
-    userInfoEl.textContent = "Connecté via Discord : " + discordUser.nickname;
+    // Affichage dans la zone profil (si présent dans le DOM)
+    if (userInfoEl) {
+      userInfoEl.textContent = "Connecté via Discord : " + discordUser.nickname;
+    }
 
     // Mise à jour du bouton dans la top-bar (reste cliquable pour permettre la déconnexion)
     if (discordBtn) {
@@ -1039,7 +1034,9 @@ function updateUserUI() {
     discordBtn.disabled = false;
   }
 
-  // Fallback : ancien système de profil local
+  // Fallback : ancien système de profil local, uniquement si la zone profil existe
+  if (!userInfoEl) return;
+
   if (!currentUser) {
     userInfoEl.textContent = "Profil : —";
   } else {
