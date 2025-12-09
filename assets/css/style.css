@@ -1,4 +1,4 @@
-/* Salvage Calculator 4.4 - Styles V6.4.8b (leaderboard + form inputs align fix) */
+/* Salvage Calculator 4.4 - Styles V6.4.8c (leaderboard + form inputs align fix) */
 
     :root {
       --bg: #020710;
@@ -102,30 +102,33 @@ body.theme-light {
     }
     /* Header layout V6.4.8b */
     .header-main {
+      position: relative;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 8px;
     }
     .header-main #titleMain {
-      flex: 1;
+      flex: 0 0 auto;
       text-align: center;
-      margin: 0;
+      margin: 0 auto;
     }
     .header-right {
+      position: absolute;
+      top: 0;
+      right: 0;
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-left: auto;
     }
 
     /* Neon labels for header controls */
     .neon-label {
       color: var(--text-main);
-      text-shadow: 0 0 8px rgba(0, 255, 255, 0.65),
-                   0 0 14px rgba(0, 255, 255, 0.45);
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.85),
+                   0 0 18px rgba(0, 255, 255, 0.55);
       font-weight: 500;
     }
     body.theme-light .neon-label {
