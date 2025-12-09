@@ -1,4 +1,4 @@
-/* Salvage Calculator 4.4 - Styles V6.4.12 (leaderboard + form inputs align fix) */
+/* Salvage Calculator 4.4 - Styles V6.4.13 (leaderboard + form inputs align fix) */
 
     :root {
       --bg: #020710;
@@ -553,10 +553,7 @@ body.theme-light {
     }
 
     .market-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-      gap: 16px;
-      align-items: flex-start;
+      display: block;
       margin-top: 8px;
     }
 
