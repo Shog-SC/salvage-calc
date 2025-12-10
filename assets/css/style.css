@@ -552,11 +552,6 @@ body.theme-light {
       color: #b7432e;
     }
 
-    .market-grid {
-      display: block;
-      margin-top: 8px;
-    }
-
     .market-graph-col {
       min-width: 0;
     }
@@ -1870,11 +1865,11 @@ body.theme-light .market-top3-legend {
   display: none !important;
 }
 
-/* V6.4.20: reduce chart height */
+/* V6.4.19: reduce chart height */
 #cmatChart { height: 300px !important; }
 
 
-/* V6.4.20: reduce vertical space of Loop RMC/CMAT panel from bottom */
+/* V6.4.19: reduce vertical space of Loop RMC/CMAT panel from bottom */
 .results-grid .panel {
   padding-bottom: 10px !important;
 }
@@ -1888,13 +1883,13 @@ body.theme-light .market-top3-legend {
 }
 
 
-/* V6.4.20: prevent Loop RMC/CMAT panel from stretching full height */
+/* V6.4.19: prevent Loop RMC/CMAT panel from stretching full height */
 .results-grid .panel {
   align-self: start !important;
 }
 
 
-/* V6.4.20: Reduce height of Top 3 leaderboard block */
+/* V6.4.19: Reduce height of Top 3 leaderboard block */
 #leaderboardTop3Box {
   max-height: 160px !important;
   overflow: hidden !important;
@@ -1907,7 +1902,7 @@ body.theme-light .market-top3-legend {
 }
 
 
-/* V6.4.20: compact Leaderboard – Salvage (online) panel */
+/* V6.4.19: compact Leaderboard – Salvage (online) panel */
 #leaderboardMainPanel {
   padding: 8px 10px 8px !important;
 }
@@ -1943,7 +1938,36 @@ body.theme-light .market-top3-legend {
 }
 
 
-/* V6.4.20 – Raise Top 3 sales block to remove gap */
+/* V6.4.20 – hide language switch (FR only UI) */
+.lang-switch,
+#langSelect,
+#langSwitchLabel {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+/* V6.4.20 – Full-width market graph */
+.market-grid {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 8px;
+}
+
+/* V6.4.20 – Affiner le rendu du graphique marché */
+.market-graph-col {
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+#cmatChart {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+
+
+/* Alignement du bloc TOP 3 Ventes RMC & CMAT sous le leaderboard */
 #sellZonesPanel {
-  margin-top: -140px !important;
+  margin-top: -200px !important;
 }
