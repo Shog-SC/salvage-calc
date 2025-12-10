@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Connexion Discord – Salvage Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      color: #e5e7eb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .box {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      border-radius: 16px;
+      padding: 20px 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h1 span.icon {
+      font-size: 20px;
+    }
+    p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: #cbd5f5;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #e5e7eb;
+    }
+    .error {
+      color: #fecaca;
+    }
+    .hint {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1><span class="icon">🛠️</span><span>Connexion Discord en cours…</span></h1>
+    <p>Merci de patienter pendant que nous finalisons la connexion avec ton compte Discord.</p>
+    <p class="hint">Tu peux fermer cet onglet une fois la redirection effectuée.</p>
+    <p id="status">Traitement des données…</p>
+  </div>
+
+  <script>
+    (function () {
+      const statusEl = document.getElementById("status");
+
+      function fail(message) {
+        console.error("Discord bridge error:", message);
+        statusEl.textContent = message;
+        statusEl.classList.add("error");
+      }
+
+      function decodeBase64Utf8(b64) {
+        // Accepte base64 "classique", base64 URL-safe, et + transformés en espaces
+        let normalized = (b64 || "")
+          .trim()
+          .replace(/ /g, "+")  // certains parseurs transforment + en espace
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        // Ajoute le padding manquant si besoin
+        while (normalized.length % 4 !== 0) {
+          normalized += "=";
+        }
+
+        const binary = atob(normalized);
+        // Décodage UTF-8
+        try {
+          return decodeURIComponent(
+            Array.prototype.map
+              .call(binary, (c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+        } catch (e) {
+          // Fallback simple si problème d'UTF-8
+          return binary;
+        }
+      }
+
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const d = params.get("d");
+
+        if (!d) {
+          fail("Paramètre de connexion manquant. Merci de relancer la connexion depuis l'application salvage.");
+          return;
+        }
+
+        let jsonStr;
+        try {
+          jsonStr = decodeBase64Utf8(d);
+        } catch (e) {
+          console.error(e);
+          fail("Impossible de décoder les données de connexion. (Base64 invalide)");
+          return;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(jsonStr);
+        } catch (e) {
+          console.error(e);
+          fail("Données de connexion illisibles. (JSON invalide)");
+          return;
+        }
+
+        const user = {
+          id: data.discordId || data.id || null,
+          nickname: data.globalName || data.username || "Salvager",
+          username: data.username || null,
+          avatar: data.avatar || null,
+          source: "discord",
+          ts: Date.now(),
+        };
+
+        if (!user.id) {
+          fail("Impossible de récupérer ton identifiant Discord. Merci de réessayer.");
+          return;
+        }
+
+        try {
+          localStorage.setItem("salvageDiscordUser", JSON.stringify(user));
+        } catch (e) {
+          console.error("localStorage error", e);
+          // On continue quand même
+        }
+
+        statusEl.textContent = "Connexion Discord réussie. Redirection vers salvage…";
+
+        setTimeout(function () {
+          // Redirection vers la page principale (index dans le même dossier)
+          window.location.href = "index.html";
+        }, 800);
+      } catch (e) {
+        console.error(e);
+        fail("Erreur inattendue lors de la connexion Discord.");
+      }
+    })();
+  </script>
+</body>
+</html>
