@@ -1,8 +1,9 @@
-<!-- pages/hauling.html — V1_4_1 -->
+<!-- pages/hauling.html — V1.6.10 -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+<meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FRET — Calculateur</title>
 
@@ -49,11 +50,14 @@
                     <span class="ship-picker-label" id="shipPickerLabel">—</span>
                     <span class="ship-picker-caret">▼</span>
                   </button>
-                  <div id="shipPickerMenu" class="ship-picker-menu is-hidden" role="listbox" aria-label="Liste des vaisseaux"></div>
+                  <div id="shipPickerMenu" class="ship-picker-menu is-hidden" role="listbox" aria-label="Liste des vaisseaux">
+  <div class="ship-picker-inner">
+    <input id="shipPickerSearch" class="ship-picker-search" type="text" placeholder="Rechercher un vaisseau..." autocomplete="off" />
+    <div id="shipPickerList" class="ship-picker-list" role="listbox" aria-label="Liste des vaisseaux"></div>
+  </div>
+</div>
                 </div>
-
-                <button id="btnMaxScu" class="btn-secondary" type="button">Max SCU</button>
-              </div>
+</div>
               
             </div>
 
@@ -66,7 +70,7 @@
               <div class="field">
                 <label for="customShipScu">Capacité (SCU)</label>
                 <input id="customShipScu" type="number" inputmode="numeric" min="0" step="1" value="0" />
-                <div class="hint">Astuce : “Max SCU” recale le cargo sur ta capacité custom.</div>
+                <div class="hint">Saisis la capacité SCU de ton vaisseau custom.</div>
               </div>
               <div class="divider"></div>
             </div>
@@ -154,7 +158,8 @@
               <div class="verdict-value" id="verdictText">—</div>
               <div class="verdict-sub" id="cargoProfile"></div>
             
-            <div id="riskNote" class="risk-note is-hidden" aria-live="polite">⚠ Risque</div>
+            <div id="verdictReason" class="verdict-reason"></div>
+<div id="riskNote" class="risk-note is-hidden" aria-live="polite">⚠ Risque</div>
 </div>
 
             <div class="divider"></div>
@@ -175,7 +180,7 @@
     </div>
   </div>
 
-  <div class="module-version">Fret · V1.6.3 · MAJ : 15/12/2025</div>
+  <div class="module-version">Fret · V1.6.10 · MAJ : 16/12/2025</div>
 
   <script src="../assets/js/hauling.js"></script>
 </body>

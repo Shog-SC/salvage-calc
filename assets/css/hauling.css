@@ -1,4 +1,4 @@
-/* assets/css/hauling.css — V1_6_3
+/* assets/css/hauling.css — V1_6_10
    Patch:
    - Adjust Hauling brightness to match HUB/Recyclage (add vignette + slightly darker panels)
    - Discord button filled cyan neon (Recyclage style)
@@ -681,3 +681,50 @@
 
 /* V1.6.3 ensure is-hidden always hides */
 .page-hauling .is-hidden{display:none !important;}
+
+
+/* === PATCH V1.6.4 — Mode Débutant UX (Max SCU intelligent + raison verdict) === */
+
+.page-hauling .verdict-reason{
+  margin-top: 6px;
+  color: rgba(240,245,255,.78);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+
+/* === PATCH V1.6.9 — Ship picker UX (search + list) + verdict reason === */
+
+.page-hauling .ship-picker-inner{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.page-hauling .ship-picker-search{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,230,255,.18);
+  background: rgba(0,0,0,.25);
+  color: rgba(240,245,255,.92);
+  outline: none;
+}
+
+.page-hauling .ship-picker-search:focus{
+  border-color: rgba(0,230,255,.35);
+  box-shadow: 0 0 0 2px rgba(0,230,255,.10);
+}
+
+.page-hauling .ship-picker-list{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page-hauling .verdict-reason{
+  margin-top: 6px;
+  color: rgba(240,245,255,.78);
+  font-size: 13px;
+  line-height: 1.25;
+}
