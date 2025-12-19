@@ -1,4 +1,4 @@
-/* core.css - Version V1.5.21
+/* core.css - Version V1.5.30
    Global UI: Background image + Neon/Glass theme (theme-neon) + centered navigation under title.
    Patch goals (V1.3.9):
    - Increase core specificity so it overrides module-scoped selectors like .page-hauling .panel
@@ -59,13 +59,13 @@
 
 
   /* ====== Unified surfaces (single source of truth) ====== */
-  --surface-panel-bg: linear-gradient(180deg, rgba(8, 22, 40, 0.66), rgba(6, 16, 30, 0.60));
+  --surface-panel-bg: linear-gradient(180deg, rgba(12, 36, 64, 0.68), rgba(10, 28, 52, 0.60));
   --surface-panel-border: var(--accent-border);
   --panel-outline-border: rgba(231,236,255,.22);
   --panel-outline-inset: inset 0 0 0 1px rgba(255,255,255,.06);
   --control-outline-border: rgba(231,236,255,.22);
   --control-outline-inset: inset 0 0 0 1px rgba(255,255,255,.05);
-  --surface-card-bg: rgba(0, 10, 20, 0.32);
+  --surface-card-bg: rgba(0, 22, 40, 0.34);
   --surface-card-border: rgba(231,236,255,.14);
   --surface-control-bg: rgba(0, 10, 20, 0.55);
   --surface-control-border: var(--accent-border);
@@ -734,21 +734,42 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
 
 
 /* HUB header actions (Discord buttons top-right)
-   IMPORTANT: scoped to HUB only so module pages keep normal flow.
+   V1.5.23 — Keep original HUB layout (no wrap) + prevent overlap by constraining width.
+   Note: the Discord userbox itself is compacted in hub-discord-widget.css.
 */
 body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions{
   position:absolute;
   top:18px;
   right:18px;
   display:flex;
+  align-items:center;
+  justify-content:flex-end;
   gap:10px;
-  z-index:5;
+  z-index: 30;
+
+/* HUB hero spacing — keep calibrated gap between HERO and "État du HUB" (V1.5.27) */
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .hub-hero-card{
+  margin-bottom: 34px !important;
 }
+
+
+  /* Prevent layout changes: do NOT wrap; instead rely on compact userbox + ellipsis */
+  flex-wrap: nowrap;
+
+  /* Constrain the action row within viewport */
+  max-width: calc(100vw - 36px);
+}
+
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions > *{
+  min-width: 0;
+}
+
 @media (max-width: 980px){
   body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions{
     position:static;
     justify-content:center;
     margin-top:10px;
+    max-width: 100%;
   }
 }
 
@@ -977,23 +998,8 @@ a:focus-visible, button:focus-visible{
 ============================ */
 
 /* Even lighter vignette on HUB */
-body:not(.page-hauling):not(.page-salvage):not(.page-mining) .overlay::before{
-  background:
-    radial-gradient(120% 80% at 50% 18%, rgba(0,0,0,.03), rgba(0,0,0,.10) 68%),
-    linear-gradient(to bottom, rgba(0,0,0,.03), rgba(0,0,0,.08));
-}
-
 /* Panels more translucent on HUB */
-body:not(.page-hauling):not(.page-salvage):not(.page-mining) .panel{
-  background: linear-gradient(180deg, rgba(12, 36, 64, 0.68), rgba(10, 28, 52, 0.60));
-  border-color: rgba(0,229,255,.34);
-}
-
 /* Cards slightly clearer */
-body:not(.page-hauling):not(.page-salvage):not(.page-mining) .card{
-  background: rgba(0, 22, 40, 0.34);
-}
-
 /* ============================
    Background dim fix (no banding)
    Adjusted for brighter background (V1.3.7)
@@ -1010,8 +1016,9 @@ body:not(.page-hauling):not(.page-salvage):not(.page-mining) .card{
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 80% at 50% 20%, rgba(0,0,0,.10), rgba(0,0,0,.22) 70%),
-    linear-gradient(to bottom, rgba(0,0,0,.06), rgba(0,0,0,.16));
+    
+    radial-gradient(120% 80% at 50% 18%, rgba(0,0,0,.03), rgba(0,0,0,.10) 68%),
+    linear-gradient(to bottom, rgba(0,0,0,.03), rgba(0,0,0,.08));
   pointer-events: none;
   z-index: 0;
 }
@@ -1429,4 +1436,17 @@ body.page-salvage .is-hidden{ display:none !important; }
     width: calc(100% - 18px);
     bottom: 10px;
   }
+}
+
+/* =========================================================
+   Remove legacy footer credit (Powered by Shog Salvage Tools)
+   V1.5.30
+   ========================================================= */
+.app-footer-brand,
+.powered-by,
+#poweredBy,
+#appPoweredBy{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }

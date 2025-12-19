@@ -83,25 +83,32 @@
     return int(r?.finalScore100 ?? Math.round(num(r?.finalScore ?? 0) * 100)) || 0;
   }
 
-  function stabMeta(r) {
-    // Best-effort: if stock/refresh signals are missing, show "—" instead of a misleading 50/100.
-    const hasSignals =
-      num(r?.buyStockSCU ?? 0) > 0 || num(r?.sellStockSCU ?? 0) > 0 ||
-      num(r?.buyRefresh ?? 0) > 0 || num(r?.sellRefresh ?? 0) > 0;
+  function stabMeta(r){
+    // "Stabilité" badge (UEX) — 5 niveaux (badge uniquement)
+    // Source: r.stability100 (0..100) ou r.stabilityScore / r.stability (0..1 ou 0..100).
+    const raw =
+      (typeof r?.stability100 === "number" ? r.stability100 :
+      (typeof r?.stabilityScore === "number" ? r.stabilityScore :
+      (typeof r?.stability === "number" ? r.stability : null)));
 
-    if (!hasSignals) {
-      return {
-        label: "Stabilité: —",
-        cls: "is-unk",
-        title: "Données stock/refresh indisponibles (best-effort).",
-      };
+    if(raw === null || !Number.isFinite(raw)){
+      return { label: "—", cls: "is-unk", title: "Stabilité : données insuffisantes (UEX)." };
     }
 
-    const stab100 = int(r?.stability100 ?? Math.round(num(r?.stabilityScore ?? 0) * 100)) || 0;
+    // Normalize to 0..100
+    const s = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
+    const stab100 = Math.max(0, Math.min(100, int(s) || 0));
 
-    if (stab100 >= 70) return { label: `Stabilité: ${stab100}/100 (forte)`, cls: "is-ok", title: "Stock/refresh favorables (best-effort)." };
-    if (stab100 >= 45) return { label: `Stabilité: ${stab100}/100 (moyenne)`, cls: "is-mid", title: "Stock/refresh moyens (best-effort)." };
-    return { label: `Stabilité: ${stab100}/100 (faible)`, cls: "is-low", title: "Stock/refresh faibles (best-effort)." };
+    if(stab100 <= 0){
+      return { label: "—", cls: "is-unk", title: "Stabilité : données insuffisantes (UEX)." };
+    }
+
+    // 5-level scale (more informative than a single 'Variable')
+    if(stab100 >= 80) return { label: "Très stable", cls: "is-ok",  title: `Stabilité (UEX) : ${stab100}/100 — Très stable` };
+    if(stab100 >= 65) return { label: "Stable",      cls: "is-ok",  title: `Stabilité (UEX) : ${stab100}/100 — Stable` };
+    if(stab100 >= 50) return { label: "Variable",    cls: "is-mid", title: `Stabilité (UEX) : ${stab100}/100 — Variable` };
+    if(stab100 >= 35) return { label: "Instable",    cls: "is-low", title: `Stabilité (UEX) : ${stab100}/100 — Instable` };
+    return               { label: "Volatile",    cls: "is-low", title: `Stabilité (UEX) : ${stab100}/100 — Volatile` };
   }
 
   async function fetchJson(url, opts = {}) {

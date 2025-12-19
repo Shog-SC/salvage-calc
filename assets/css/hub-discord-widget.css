@@ -1,4 +1,4 @@
-/* assets/css/hub-discord-widget.css — Version V1.0.5
+/* assets/css/hub-discord-widget.css — Version V1.0.6
    Objectif:
    - Harmoniser l'UI du widget Discord (login + user box) avec le thème core.css (neon/glass)
    - Avatar en rond
@@ -134,43 +134,26 @@
   }
 }
 
-/* --- HUB top actions integration (prevents overlap when logged) --- */
-.hub-top-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:10px;
-  flex-wrap:wrap;              /* allow wrap instead of overlapping */
-  row-gap:10px;
+/* HUB-only compaction to avoid overlap in absolute header-actions (V1.0.6) */
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions .shog-discord-userbox{
+  padding: 6px 8px;
+  gap: 8px;
+  max-width: 260px;
 }
 
-/* Ensure children can shrink/wrap gracefully */
-.hub-top-actions > *{
-  flex: 0 1 auto;
-  min-width: 0;
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions .shog-discord-avatar{
+  width: 34px;
+  height: 34px;
 }
 
-/* Make the userbox responsive so it never collides with the left button */
-#shogDiscordUserBox.shog-discord-userbox{
-  max-width: min(520px, 100%);
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions .shog-discord-userlabel{
+  display: none; /* keep it compact: "Connecté" removed */
 }
 
-/* Keep username from forcing overflow */
-#shogDiscordUsername.shog-discord-username{
-  max-width: 160px;
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions .shog-discord-username{
+  max-width: 110px;
 }
 
-/* On tighter widths, make the userbox a bit more compact */
-@media (max-width: 820px){
-  #shogDiscordUserBox.shog-discord-userbox{
-    padding: 6px 8px;
-    gap: 8px;
-  }
-  #shogDiscordAvatar.shog-discord-avatar{
-    width: 34px;
-    height: 34px;
-  }
-  #shogDiscordUsername.shog-discord-username{
-    max-width: 130px;
-  }
+body:not(.page-hauling):not(.page-salvage):not(.page-mining) .header-actions #shogDiscordLogoutBtn{
+  padding: 8px 10px;
 }

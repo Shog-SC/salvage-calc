@@ -1,4 +1,4 @@
-/* assets/css/hauling.css — V1.12.9
+/* assets/css/hauling.css — V1.13.6
    IMPORTANT: fichier complet (remplacement total)
    Objectif: conserver la "neon vibe" + compat UI FRET V1.12.9.
    NOTE: Typo delegated to core.css (no fixed px font sizes).
@@ -598,6 +598,13 @@
   background: rgba(0,0,0,0.22);
   user-select:none;
 }
+
+.stab-label{
+  margin-left: 2px;
+  margin-right: 4px;
+  font-size: var(--font-xs);
+  color: var(--muted);
+}
 .stab-badge.is-ok{
   border-color: rgba(0,255,200,0.28);
   background: rgba(0,255,200,0.08);
@@ -957,3 +964,14 @@
   pointer-events: none !important;
 }
 
+/* Stability badge — 5 levels (V1.13.7) */
+.stab-badge.is-ok2{
+  border-color: rgba(80,255,210,.35);
+  background: rgba(80,255,210,.14);
+  color: rgba(220,255,248,.95);
+}
+.stab-badge.is-low2{
+  border-color: rgba(255,120,120,.35);
+  background: rgba(255,120,120,.14);
+  color: rgba(255,235,235,.95);
+}
