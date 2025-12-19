@@ -1,4 +1,4 @@
-/* assets/js/salvage.js — V1.4.40 FULL
+/* assets/js/salvage.js — V1.4.41 FULL
    Recyclage (Salvage) — PU 4.5
    ---------------------------------------------------------------------------
    Objectifs V1.4.25
@@ -47,9 +47,10 @@
 
   // Salvage head presets (optional helper)
   const HEADS = [
-    { id: "default", name: "Standard", note: "Preset neutre", refinePct: null, loopMinDelta: 0 },
-    { id: "fast", name: "Rapide", note: "Boucle plus courte (estimation)", refinePct: null, loopMinDelta: -5 },
-    { id: "efficient", name: "Efficiente", note: "Meilleur rendement (estimation)", refinePct: +5, loopMinDelta: 0 },
+    { id: "trawler", name: "Trawler (UIF)", speedMult: 6.0, note: "Speed x6.0 · Radius 0.6m · Efficiency 340" },
+    { id: "abrade",  name: "Abrade (UIF)",  speedMult: 3.5, note: "Speed x3.5 · Radius 0.9m · Efficiency 340" },
+    { id: "cinch",   name: "Cinch (UIF)",   speedMult: 1.5, note: "Speed x1.5 · Radius 1.0m · Efficiency 340" },
+    { id: "neutral", name: "Neutre",        speedMult: 6.0, note: "Sans bonus (baseline outil)" }
   ];
 
   /* -----------------------------
@@ -382,36 +383,49 @@
     if (!salvageHeadSelect) return;
     salvageHeadSelect.innerHTML = HEADS.map(h => `<option value="${h.id}">${h.name}</option>`).join("");
     const ui = getUiState();
-    salvageHeadSelect.value = ui.head || "default";
+    salvageHeadSelect.value = ui.head || "trawler";
   }
 
   function getHeadPreset() {
-    const id = salvageHeadSelect?.value || "default";
+    const id = salvageHeadSelect?.value || "trawler";
     return HEADS.find(h => h.id === id) || HEADS[0];
   }
 
+  function getHeadSpeedFactor(){
+    const h = getHeadPreset();
+    // Normalisation contre Trawler (6.0) : choisir Trawler ne change pas votre durée saisie.
+    const raw = safePosNum(h?.speedMult, 1) || 1;
+    const trawlerBase = 6.0;
+    const factor = raw / trawlerBase;
+    return Math.max(0.1, factor);
+  }
+
+  function getEffectiveLoopMinutes(rawMinutes){
+    const mins = Math.max(1, safePosNum(rawMinutes, 0));
+    const f = getHeadSpeedFactor();
+    return mins / f;
+  }
+
+
   function syncHeadPreset(applyValues) {
     const h = getHeadPreset();
-    if (salvageHeadInfo) setText(salvageHeadInfo, h.note || "—");
 
-    if (applyValues) {
-      // Apply a small delta on loop minutes (estimation aid)
-      if (loopMinutes) {
-        const base = Math.max(1, Math.round(safePosNum(loopMinutes.value, 45)));
-        loopMinutes.value = Math.max(1, base + (h.loopMinDelta || 0));
-      }
-      if (begLoopMinutes) {
-        const base = Math.max(1, Math.round(safePosNum(begLoopMinutes.value, 45)));
-        begLoopMinutes.value = Math.max(1, base + (h.loopMinDelta || 0));
-      }
-
-      // Optional refine +x%
-      if (h.refinePct !== null && cmatRefineYield) {
-        const base = Math.max(0, Math.min(100, Math.round(safePosNum(cmatRefineYield.value, 30))));
-        cmatRefineYield.value = Math.max(0, Math.min(100, base + (h.refinePct || 0)));
+    // UI: show official name + key stats
+    if (salvageHeadInfo) {
+      if (h.id === "default") {
+        setText(salvageHeadInfo, h.note || "—");
+      } else {
+        const parts = [];
+        if (h.speedMult) parts.push(`Vitesse x${String(h.speedMult).replace(".", ",")}`);
+        if (h.radiusM) parts.push(`Rayon ${String(h.radiusM).replace(".", ",")} m`);
+        if (h.efficiency) parts.push(`Efficacité ${h.efficiency}`);
+        const stats = parts.length ? ` • ${parts.join(" • ")}` : "";
+        setText(salvageHeadInfo, `${h.name}${stats} — ${h.note || ""}`.trim());
       }
     }
 
+    // IMPORTANT: we do NOT mutate user inputs automatically (avoid surprises).
+    // The head affects the *effective* loop minutes inside calculations only.
     setUiState({ head: h.id });
   }
 
@@ -629,7 +643,7 @@
     const pRmc = safePosNum(priceRmc?.value, 0);
     const pCmat = safePosNum(priceCmat?.value, 0);
 
-    const loopMin = Math.max(1, Math.round(safePosNum(begLoopMinutes?.value, 45)));
+    const loopMin = getEffectiveLoopMinutes(Math.max(1, Math.round(safePosNum(begLoopMinutes?.value, 45))));
     const hours = loopMin / 60;
 
     const valRmc = qRmc * pRmc;
@@ -655,7 +669,7 @@
     const pRmc = safePosNum(advPriceRmc?.value, 0);
     const pCmat = safePosNum(advPriceCmat?.value, 0);
 
-    const loopMin = Math.max(1, Math.round(safePosNum(loopMinutes?.value, 45)));
+    const loopMin = getEffectiveLoopMinutes(Math.max(1, Math.round(safePosNum(loopMinutes?.value, 45))));
     const hours = loopMin / 60;
 
     const fees = clamp01(safePosNum(feesPct?.value, 0) / 100); // 0..1
@@ -1043,35 +1057,7 @@
     advChartTooltip.setAttribute("aria-hidden", on ? "false" : "true");
     if (!on) return;
 
-    // Position tooltip with horizontal clamping + edge docking (prevents clipping at chart end)
-    const parent = advChartTooltip.parentElement;
-    const pr = parent ? parent.getBoundingClientRect() : null;
-
-    // Default anchor
-    let leftPx = x;
-    let mode = "center"; // center | left | right
-
-    if(pr){
-      const edgePad = 12;
-      const rightDockAt = 170; // when near right edge, dock tooltip to the right side
-      const leftDockAt  = 120; // when near left edge, dock tooltip to the left side
-
-      if(leftPx > (pr.width - rightDockAt)){
-        leftPx = pr.width - edgePad;
-        mode = "right";
-      }else if(leftPx < leftDockAt){
-        leftPx = edgePad;
-        mode = "left";
-      }
-
-      // Clamp (safety)
-      leftPx = Math.max(edgePad, Math.min(pr.width - edgePad, leftPx));
-    }
-
-    // Keep Y anchored to cursor (we only flip vertically if needed)
-    advChartTooltip.style.left = `${leftPx}px`;
-    advChartTooltip.style.top = `${y}px`;
-
+    // Build content
     const htmlLines = (Array.isArray(lines) ? lines : []).map(l => (
       `<div class="tt-line"><span class="tt-k">${escapeHtml(l.k)}</span><span class="tt-v">${escapeHtml(l.v)}</span></div>`
     )).join("");
@@ -1081,12 +1067,43 @@
       <div class="tt-body">${htmlLines}</div>
     `;
 
-    // Flip vertically if out of bounds (top)
-    const tr = advChartTooltip.getBoundingClientRect();
-    const needsFlipY = pr && (tr.top < pr.top);
+    // -----------------------------
+    // DOCKED TOOLTIP (anti-clipping)
+    // -----------------------------
+    // Instead of following the cursor (which clips near edges/end of curve),
+    // we dock the tooltip to the chart side with only minimal clamping.
+    const parent = advChartTooltip.parentElement;
+    const pr = parent ? parent.getBoundingClientRect() : null;
 
-    const yPart = needsFlipY ? "18%" : "-120%";
-    const xPart = (mode === "right") ? "-100%" : (mode === "left" ? "0%" : "-50%");
+    const edgePad = 12;
+    let leftPx = x;
+    let topPx = y;
+    let xPart = "-50%";
+    let yPart = "0%";
+
+    if (pr) {
+      // Prefer docking to the right side (stable positioning).
+      const dockRight = pr.width >= 520; // if enough room, dock right
+      if (dockRight) {
+        leftPx = pr.width - edgePad;
+        topPx = edgePad + 8; // fixed top, avoids vertical clipping
+        xPart = "-100%";
+        yPart = "0%";
+      } else {
+        // On narrow layouts, dock left and keep a small top margin.
+        leftPx = edgePad;
+        topPx = edgePad + 8;
+        xPart = "0%";
+        yPart = "0%";
+      }
+
+      // Safety clamp
+      leftPx = Math.max(edgePad, Math.min(pr.width - edgePad, leftPx));
+      topPx = Math.max(edgePad, Math.min(pr.height - edgePad, topPx));
+    }
+
+    advChartTooltip.style.left = `${leftPx}px`;
+    advChartTooltip.style.top  = `${topPx}px`;
     advChartTooltip.style.transform = `translate(${xPart}, ${yPart})`;
   }
 
