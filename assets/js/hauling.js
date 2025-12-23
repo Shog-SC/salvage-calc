@@ -1,28 +1,29 @@
-/* hauling.js — V1.13.19 FULL (Assisté: Top Routes Globales + click => bascule A→B)
+/* hauling.js — V1.13.36 FULL (Suggestions: Top Routes Globales + click => bascule A→B)
    - FULL FILE (remplacement total)
    - Compatible hauling.html (tabs : tabBeginner/tabAdvanced, panels : panelBeginner/panelAdvanced)
    - Beginner: calcul manuel
    - Advanced:
        - A→B via /v1/hauling/terminals/search + /v1/hauling/route
-       - Assisté via /v1/hauling/routes/top (scan terminaux, best-effort)
+       - Suggestions via /v1/hauling/routes/top (scan terminaux, best-effort)
        - Clic sur une route => pré-remplit A/B + verrouille marchandise + lance analyse détaillée (B)
 */
 
 (() => {
   "use strict";
 
-  const VERSION = "V1.13.8a FULL";
+  const VERSION = "V1.13.36 FULL";
+window.HAULING_VERSION = "V1.13.36";
 
   // ------------------------------------------------------------
   // TECH VERSIONS (FRET) — single source of truth (Mining-like footer)
   // ------------------------------------------------------------
   const TECH = {
     module: "FRET",
-    moduleVersion: "V1.13.8a",
-    html: "V1.13.0",
-    css: "V1.13.5",
-    js: "V1.13.8a",
-    core: "V1.5.20",
+    moduleVersion: "V1.13.33",
+    html: "V1.13.33",
+    css: "V1.13.33",
+    js: "V1.13.33",
+    core: "V1.13.33",
     ships: "v2.0.5",
     pu: "4.5"
   };
@@ -34,11 +35,13 @@
   // ------------------------------------------------------------
   // CONFIG
   // ------------------------------------------------------------
-  const PROXY_BASE = "https://uex-proxy.yoyoastico74.workers.dev";
+  const DEFAULT_PROXY_BASE = "https://uex-proxy.yoyoastico74.workers.dev";
+  const PROXY_BASE = String(window.HAULING_PROXY_BASE || DEFAULT_PROXY_BASE || "").replace(/\/+$/,"");
   const GAME_VERSION = "4.5";
   const LS_KEY = "hauling.state.v1_10_2";
+  const TOP_ROUTES_CACHE_KEY = "hauling.cache.topRoutes.v1";
 
-  // Assisted (Top Routes) defaults
+  // Suggestions (Top Routes) defaults
   const TOP_ROUTES_LIMIT = 20;
   const TOP_ROUTES_MAX_TERMINALS = 90; // B: "tous terminaux" => scan large mais raisonnable; ajustable côté Worker via max_terminals
 
@@ -68,6 +71,27 @@
       .replace(/'/g, "&#039;");
   }
 
+/* GLOBAL_BADGE_HELPERS */
+function safeCommodityBadgeHtml(route){
+  try{
+    // Prefer a global badge renderer if present, else fall back to local commodityBadgeHtml
+    if(typeof window !== "undefined" && typeof window.safeCommodityBadgeHtml === "function"){
+      return window.safeCommodityBadgeHtml(route);
+    }
+    if(typeof commodityBadgeHtml === "function"){
+      return commodityBadgeHtml(route);
+    }
+    return "";
+  }catch(e){
+    return "";
+  }
+}
+// Make it available globally for all modules / templates
+if(typeof window !== "undefined"){
+  window.safeCommodityBadgeHtml = safeCommodityBadgeHtml;
+}
+
+
 
   function scoreClass(score) {
     const s = Number(score) || 0;
@@ -88,23 +112,10 @@
 
     // "Stabilité" badge (UEX) — 5 niveaux (badge uniquement)
     // Source: r.stability100 (0..100) ou r.stabilityScore / r.stability (0..1 ou 0..100).
-    // Accept number or numeric string (UEX proxy may serialize numbers).
-    const pick = (...vals) => {
-      for(const v of vals){
-        if(typeof v === "number" && Number.isFinite(v)) return v;
-        if(typeof v === "string"){
-          const f = parseFloat(v.replace(",", "."));
-          if(Number.isFinite(f)) return f;
-        }
-      }
-      return null;
-    };
-
-    const raw = pick(
-      r?.stability100, r?.stability_100, r?.stabilityPercent, r?.stability_percent,
-      r?.stabilityScore, r?.stability_score,
-      r?.stability
-    );
+    const raw =
+      (typeof r?.stability100 === "number" ? r.stability100 :
+      (typeof r?.stabilityScore === "number" ? r.stabilityScore :
+      (typeof r?.stability === "number" ? r.stability : null)));
 
     if(raw === null || !Number.isFinite(raw)){
       return { label: "—", cls: "is-unk", title: "Stabilité : données insuffisantes (UEX)." };
@@ -125,6 +136,66 @@
     if(stab100 >= 35) return { label: "Instable",    cls: "is-low", title: `Stabilité (UEX) : ${stab100}/100 — Instable` };
     return               { label: "Volatile",    cls: "is-low", title: `Stabilité (UEX) : ${stab100}/100 — Volatile` };
   }
+  function stockMeta(qtySCU){
+    const shipScu = num($("advUsableScu")?.value || 0);
+    const qty = Math.max(0, int(qtySCU ?? 0));
+    if(!shipScu || shipScu <= 0){
+      return { pct: null, label: "—", cls: "stock-unk", title: "Stock inconnu" };
+    }
+
+  // ------------------------------------------------------------
+  // Commodity risk meta (Standard / Volatile / Risqué)
+  // Heuristic, data-driven: uses profitPerSCU, stability, stock ratio
+  // ------------------------------------------------------------
+  function commodityMeta(route, stab100, stockRatio01){
+    const pscu = num(route?.profitPerSCU ?? 0);
+    const stab = num(stab100 ?? 60);
+    const sr = num(stockRatio01 ?? 0);
+
+    // "Risqué" = strong margin + scarce stock + unstable
+    if(pscu >= 50 && sr < 0.30 && stab < 60){
+      return { key:"risky", label:"Risqué" };
+    }
+    // "Volatile" = margin above average + somewhat unstable
+    if(pscu >= 30 && stab < 70){
+      return { key:"volatile", label:"Volatile" };
+    }
+    return { key:"standard", label:"Standard" };
+  }
+
+  function commodityBadgeHtml(route){
+    const stab = stab100Value(route);
+    const sr = stockRatio(route);
+    const meta = commodityMeta(route, stab, sr);
+    return `<span class="commodity-pill commodity-${meta.key}" title="Risque marchandise: ${escapeHtml(meta.label)}">${escapeHtml(meta.label)}</span>`;
+  }
+
+  // Safety wrapper: never break scans if badge helper is missing/throws
+  function safeCommodityBadgeHtml(route){
+    try{
+      return (typeof commodityBadgeHtml === "function") ? commodityBadgeHtml(route) : "";
+    }catch(e){
+      return "";
+    }
+  }
+
+
+    const pct = Math.max(0, Math.min(100, Math.round((qty / shipScu) * 100)));
+    // Thresholds tuned for hauling UX:
+    // - Élevé: can fill most of the cargo
+    // - Moyen: partial fill
+    // - Faible: scarce / unreliable
+    let label="Faible", cls="stock-low";
+    if(pct >= 80){ label="Élevé"; cls="stock-high"; }
+    else if(pct >= 40){ label="Moyen"; cls="stock-mid"; }
+    return {
+      pct,
+      label,
+      cls,
+      title: `Stock estimé: ${pct}% du cargo (Qté dispo: ${qty} SCU / SCU utilisable: ${int(shipScu)})`
+    };
+  }
+
 
   async function fetchJson(url, opts = {}) {
     const res = await fetch(url, { cache: "no-store", ...opts });
@@ -775,7 +846,10 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       return `
         <div class="top3-card goods-item" data-commodity="${escapeHtml(commodity)}">
           <div class="goods-name">${escapeHtml(commodity)}</div>
+            <div class="goods-sub goods-badges">${window.safeCommodityBadgeHtml(r)}</div>
           <div class="goods-sub">Qté: ${qty} SCU • +${fmt0(pscu)}/SCU</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
           <div class="goods-sub stab-line">Score: <span class="score-pill ${scoreClass(score100(r))}">${fmt0(score100(r))}</span>/100 <span class="stab-badge ${stabMeta(r).cls}" title="${escapeHtml(stabMeta(r).title)}">${escapeHtml(stabMeta(r).label)}</span></div>
           <div class="goods-profit">+${fmt0(profit)} aUEC</div>
         </div>
@@ -790,7 +864,182 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     });
   }
 
-  function renderGoodsList(results) {
+  // ---- goods search (client-side filter) ----
+  let advGoodsAll = [];
+  let advAnalyzeInFlight = false;
+
+  function normStr(s){
+    try{
+      return (s||"").toString().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    }catch(_){
+      return (s||"").toString().toLowerCase();
+    }
+  }
+
+
+  // ------------------------------------------------------------
+  // Fallback when A→B yields 0 results:
+  // - show actionable message
+  // - reuse global Top routes, filtered by From or To terminal name
+  // ------------------------------------------------------------
+  function filterRoutesByTerminal(routes, opts){
+    const fromK = normStr(opts?.from || "");
+    const toK   = normStr(opts?.to || "");
+    const hasFrom = !!fromK;
+    const hasTo   = !!toK;
+
+    return (Array.isArray(routes) ? routes : []).filter(r => {
+      const rf = normStr(r?.from?.name || "");
+      const rt = normStr(r?.to?.name || "");
+      if(hasFrom && rf === fromK) return true;
+      if(hasTo && rt === toK) return true;
+      return false;
+    });
+  }
+
+  async function ensureGlobalTopRoutes(){
+    const has = Array.isArray(state?.assisted?.lastRoutesRaw) && state.assisted.lastRoutesRaw.length > 0;
+    if(has) return state.assisted.lastRoutesRaw;
+    await fetchTopRoutes();
+    return Array.isArray(state?.assisted?.lastRoutesRaw) ? state.assisted.lastRoutesRaw : [];
+  }
+
+  function filterGoodsByQuery(all, q){
+    const query = normStr(q).trim();
+    if (!query) return all;
+    const tokens = query.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return all;
+
+    return all.filter(r => {
+      const hay = normStr(`${r.commodity||""}`);
+      return tokens.every(t => hay.includes(t));
+    });
+  }
+  function filterRoutesByCommodity(allRoutes, q){
+    const query = normStr(q).trim();
+    if (!query) return allRoutes;
+    const tokens = query.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return allRoutes;
+
+    return (allRoutes || []).filter(r => {
+      const hay = normStr(`${r?.commodity || ""}`);
+      return tokens.every(t => hay.includes(t));
+    });
+  }
+
+  function bestCommodityLabel(allRoutes, q){
+    const query = normStr(q).trim();
+    if (!query) return "";
+    // If user typed partial, try to pick the closest commodity label from current routes
+    const set = new Map();
+    (allRoutes || []).forEach(r => {
+      const c = (r?.commodity || "").trim();
+      if (c) set.set(normStr(c), c);
+    });
+    // exact match
+    if (set.has(query)) return set.get(query);
+    // contains match
+    for (const [k, v] of set.entries()){
+      if (k.includes(query)) return v;
+    }
+    return "";
+  }
+
+  let advCommoditySearchInFlight = false;
+  let advCommodityLastQuery = "";
+  let advCommodityLastRunTs = 0;
+
+
+  let goodsSearchTimer = null;
+  function wireGoodsSearch(){
+    const input = $("advSearch");
+    const clear = $("advSearchClear");
+
+    const apply = async () => {
+      const q = (input?.value || "").trim();
+
+      // If user searches a commodity BEFORE running analysis/suggestions:
+      // run a global scan and filter routes by commodity automatically.
+      if (q){
+        const now = Date.now();
+        const needScan = !Array.isArray(state?.assisted?.lastRoutesRaw) || state.assisted.lastRoutesRaw.length === 0 || (now - (advCommodityLastRunTs || 0) > 120000);
+
+        // Avoid spamming the proxy on every keystroke
+        if (!advCommoditySearchInFlight && (needScan || advCommodityLastQuery !== q)){
+          advCommoditySearchInFlight = true;
+          advCommodityLastQuery = q;
+          try{
+            // If we already have routes cached, just filter and render without calling the proxy.
+            if (!needScan){
+              const routesRaw = Array.isArray(state.assisted.lastRoutesRaw) ? state.assisted.lastRoutesRaw : [];
+              const routes = sortItems(routesRaw, getAdvSort());
+              const routesFiltered = filterRoutesByCommodity(routes, q);
+              unlockCommodity();
+              const lbl = bestCommodityLabel(routes, q) || q;
+              lockCommodity(lbl);
+              renderTopRoutes(routesFiltered, state.assisted.lastScan || null);
+              setAdvText("advCount", `${routesFiltered.length} / ${routes.length} routes`);
+              setAdvText("advRouteStatus", `OK • ${routesFiltered.length} routes (filtré)`);
+            } else {
+              advCommodityLastRunTs = now;
+              await fetchTopRoutes({ commodityQuery: q });
+            }
+          } finally {
+            advCommoditySearchInFlight = false;
+          }
+          return;
+        }
+
+        // If list already displayed, keep live filtering locally.
+        if (Array.isArray(advGoodsAll) && advGoodsAll.length){
+          const filtered = filterGoodsByQuery(advGoodsAll, q);
+          return renderGoodsList(filtered, true);
+        }
+      }
+
+      // Empty query: restore full views
+      if (!q){
+        unlockCommodity();
+        if (Array.isArray(state?.assisted?.lastRoutesRaw) && state.assisted.lastRoutesRaw.length){
+          const routes = sortItems(state.assisted.lastRoutesRaw, getAdvSort());
+          renderTopRoutes(routes, state.assisted.lastScan || null);
+          setAdvText("advCount", `${routes.length} routes`);
+        } else if (Array.isArray(advGoodsAll) && advGoodsAll.length){
+          renderGoodsList(advGoodsAll, true);
+        }
+      }
+    };
+
+    let t = null;
+    if (input){
+      input.addEventListener("input", () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => { apply(); }, 250);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter"){
+          e.preventDefault();
+          apply();
+        }
+        if (e.key === "Escape"){
+          input.value = "";
+          apply();
+          input.blur();
+        }
+      });
+    }
+
+    if (clear){
+      clear.addEventListener("click", () => {
+        if (input) input.value = "";
+        apply();
+        input && input.focus();
+      });
+    }
+  }
+
+
+  function renderGoodsList(results, isFiltered=false) {
     const list = $("advGoodsList");
     if (!list) return;
 
@@ -800,6 +1049,16 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       return;
     }
     if (empty) empty.remove();
+
+    // Keep a copy of the full dataset for client-side search
+    if (!isFiltered) advGoodsAll = Array.isArray(results) ? results.slice() : [];
+
+    // Auto-apply search query if present
+    const __q = ($("advSearch")?.value || "").trim();
+    if (!isFiltered && __q){
+      const __filtered = filterGoodsByQuery(advGoodsAll, __q);
+      return renderGoodsList(__filtered, true);
+    }
 
     const locked = (state.advanced.lockedCommodity || "").toLowerCase();
 
@@ -815,6 +1074,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
         <div class="goods-item ${isLocked ? "is-locked" : ""}" role="listitem" data-commodity="${escapeHtml(commodity)}">
           <div class="goods-left">
             <div class="goods-name">${escapeHtml(commodity)}</div>
+            <div class="goods-sub goods-badges">${window.safeCommodityBadgeHtml(r)}</div>
             <div class="goods-sub">Qté: ${qty} SCU • Achat: ${fmt0(spend)} • +${fmt0(pscu)}/SCU</div>
           </div>
           <div class="goods-right">
@@ -832,7 +1092,9 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       });
     });
 
-    setAdvText("advCount", `${results.length} résultats`);
+    const total = Array.isArray(advGoodsAll) ? advGoodsAll.length : results.length;
+    const suffix = total && total !== results.length ? ` (${results.length}/${total})` : "";
+    setAdvText("advCount", `${results.length} résultats${suffix}`);
   }
 
   function showLocked(name) {
@@ -915,17 +1177,47 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     const raw = String(name || "").trim();
     if (!raw) return null;
 
-    const n = raw.toLowerCase();
-    const map = state.advanced.terminalsByName || {};
-    const exact = map[n];
+    const key = raw.toLowerCase();
+
+    // 1) Fast path: if we already resolved it, use the map
+    state.advanced.terminalsByName = state.advanced.terminalsByName || {};
+    const exact = state.advanced.terminalsByName[key];
     if (exact?.id_terminal) return exact.id_terminal ?? null;
 
-    // Fuzzy: contains / startsWith (helps when user types partial or missing suffix)
-    const terminals = state.advanced.terminals || [];
-    let cand = terminals.find(t => String(t?.name || "").toLowerCase() === n);
-    if (!cand) cand = terminals.find(t => String(t?.name || "").toLowerCase().startsWith(n));
-    if (!cand) cand = terminals.find(t => String(t?.name || "").toLowerCase().includes(n));
-    return cand?.id_terminal ?? null;
+    // 2) Try last autocomplete cache (what user likely picked)
+    const cached = Array.isArray(state?.terminalsCache?.items) ? state.terminalsCache.items : [];
+    let cand = cached.find(t => String(t?.name || "").toLowerCase() === key)
+            || cached.find(t => String(t?.name || "").toLowerCase().startsWith(key))
+            || cached.find(t => String(t?.name || "").toLowerCase().includes(key));
+    if (cand?.id_terminal) {
+      state.advanced.terminalsByName[key] = cand;
+      return cand.id_terminal ?? null;
+    }
+
+    // 3) Authoritative resolve: query API search with the provided text
+    try{
+      const url = `${PROXY_BASE}/v1/hauling/terminals/search?q=${encodeURIComponent(raw)}&game_version=${encodeURIComponent(GAME_VERSION)}`;
+      const payload = await fetchJson(url);
+      const { data } = unwrapV1(payload);
+      const terminals = Array.isArray(data?.terminals) ? data.terminals : [];
+      if (!terminals.length) return null;
+
+      // store for future resolution
+      terminals.slice(0, 50).forEach(t => {
+        const k = String(t?.name || "").trim().toLowerCase();
+        if (k) state.advanced.terminalsByName[k] = t;
+      });
+
+      cand = terminals.find(t => String(t?.name || "").toLowerCase() === key)
+          || terminals.find(t => String(t?.name || "").toLowerCase().startsWith(key))
+          || terminals.find(t => String(t?.name || "").toLowerCase().includes(key))
+          || terminals[0];
+
+      return cand?.id_terminal ?? null;
+    } catch(e){
+      console.warn("[hauling] resolveTerminalIdByName failed:", e);
+      return null;
+    }
   }
 
   async function analyzeRouteAdvanced() {
@@ -992,9 +1284,37 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       renderGoodsList(results);
       try { setSortStatus(); } catch (_) {}
 
-      setAdvText("advRouteStatus", `OK • ${results.length} résultats`);
+      if(results.length === 0){
+        setAdvText("advRouteStatus", "OK • 0 résultat — aucun échange direct viable avec tes critères. Affichage de routes alternatives…");
+
+        // Fallback: show best routes FROM A, otherwise TO B, otherwise global top.
+        try{
+          const allTop = await ensureGlobalTopRoutes();
+          const fromName = ($("advRouteFrom")?.value || "").trim();
+          const toName = ($("advRouteTo")?.value || "").trim();
+
+          let fb = filterRoutesByTerminal(allTop, { from: fromName, to: "" });
+          let fbLabel = fromName ? `Alternatives depuis ${fromName}` : "Alternatives";
+          if(!fb.length){
+            fb = filterRoutesByTerminal(allTop, { from: "", to: toName });
+            fbLabel = toName ? `Alternatives vers ${toName}` : "Alternatives";
+          }
+          if(!fb.length){
+            fb = allTop;
+            fbLabel = "Alternatives globales";
+          }
+
+          const fbSorted = sortItems(applyRiskToResults(fb), getAdvSort());
+          renderTopRoutes(fbSorted, state.assisted.lastScan || null);
+          setAdvText("advCount", `${fbSorted.length} routes — ${fbLabel}`);
+        }catch(e){
+          console.warn("[hauling] fallback suggestions failed:", e);
+        }
+      } else {
+        setAdvText("advRouteStatus", `OK • ${results.length} résultats`);
+      }
       saveState();
-    } catch (e) {
+} catch (e) {
       console.warn("[hauling][adv] analyze failed:", e);
       setChip("Proxy/UEX indisponible", true);
       setAdvText("advRouteStatus", `Erreur: ${String(e?.message || e)}`);
@@ -1009,6 +1329,115 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     if (v === "profit" || v === "pscu" || v === "score") return v;
     return "score";
   }
+  // ------------------------------------------------------------
+  // ADVANCED: Tolérance au risque = stabilité + zones + stocks
+  // - Faible : exclut zones risquées + exige stabilité élevée + stock élevé
+  // - Normal : pénalise zones risquées + exige stabilité minimale + stock moyen
+  // - Élevée : profit-first (pas de filtres zone/stock)
+  // Stock: utilise quantitySCU (proxy de disponibilité à l'achat) vs SCU utilisable.
+  // Zones "risquées": best-effort via champ system (ex: Pyro).
+  // ------------------------------------------------------------
+  const RISKY_SYSTEMS = ["pyro","nyx"];
+
+  function clamp01(x){
+    const v = num(x);
+    return Math.max(0, Math.min(1, v));
+  }
+
+  function stab100Value(r){
+    const raw =
+      (typeof r?.stability100 === "number" ? r.stability100 :
+      (typeof r?.stabilityScore === "number" ? r.stabilityScore :
+      (typeof r?.stability === "number" ? r.stability : null)));
+    if(raw === null || !Number.isFinite(raw)) return 60;
+    const s = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
+    return Math.max(0, Math.min(100, int(s) || 60));
+  }
+
+  function systemName(x){
+    return String(x || "").trim().toLowerCase();
+  }
+
+  function isRiskyZone(route){
+    const fs = systemName(route?.from?.system);
+    const ts = systemName(route?.to?.system);
+    return RISKY_SYSTEMS.includes(fs) || RISKY_SYSTEMS.includes(ts);
+  }
+
+  function stockRatio(route){
+    const shipScu = num($("advUsableScu")?.value || 0);
+    const qty = Math.max(0, int(route?.quantitySCU ?? 0));
+    if(shipScu <= 0) return 0;
+    return clamp01(qty / shipScu);
+  }
+
+  function riskPolicy(risk){
+    // minStab100: hard filter
+    // minStockRatio: hard filter
+    // riskyPenalty: score multiplier if risky zone is allowed
+    // stabPenaltyWeight: how much instability penalizes score
+    if(risk === "low")  return { minStab100: 70, minStockRatio: 0.60, riskyPenalty: 0.0,  stabPenaltyWeight: 0.55 };
+    if(risk === "mid")  return { minStab100: 40, minStockRatio: 0.30, riskyPenalty: 0.85, stabPenaltyWeight: 0.35 };
+    return               { minStab100:  0, minStockRatio: 0.00, riskyPenalty: 1.00, stabPenaltyWeight: 0.00 };
+  }
+
+  function applyRiskToResults(list){
+    const risk = (state?.advanced?.risk === "high" || state?.advanced?.risk === "mid" || state?.advanced?.risk === "low")
+      ? state.advanced.risk
+      : "low";
+
+    const pol = riskPolicy(risk);
+    const out = [];
+    for(const r of (Array.isArray(list) ? list : [])){
+      const risky = isRiskyZone(r);
+
+      // Zone filter
+      if(pol.riskyPenalty <= 0 && risky) continue;
+
+      // Stability filter
+      const stab = stab100Value(r);
+      if(pol.minStab100 > 0 && stab < pol.minStab100) continue;
+
+      // Stock filter
+      const sr = stockRatio(r);
+      if(pol.minStockRatio > 0 && sr < pol.minStockRatio) continue;
+
+      // Commodity filter/weighting (by tolerance)
+      const cMeta = commodityMeta(r, stab, sr);
+      if(risk === "low" && cMeta.key === "risky") continue;
+
+      // Base score: prefer finalScore (0..1), fallback to profitTotal normalized lightly
+      const base = clamp01(
+        (typeof r?.finalScore === "number" ? r.finalScore :
+        (typeof r?.finalScore100 === "number" ? (r.finalScore100 / 100) :
+        0))
+      );
+
+      // Stability penalty (low/mid)
+      const stabFactor = stab / 100;
+      const penalty = pol.stabPenaltyWeight * (1 - stabFactor);
+      let adj = clamp01(base * (1 - penalty));
+
+      // Risky zone penalty (mid)
+      if(risky && pol.riskyPenalty < 1) adj = clamp01(adj * pol.riskyPenalty);
+
+      // Stock soft boost for low/mid (encourage healthier supply)
+      if(risk !== "high"){
+        const stockBoost = 1 + 0.12 * (sr - 0.5); // +/-6% around mid
+        adj = clamp01(adj * stockBoost);
+      }
+
+      // Commodity risk weighting
+      if(risk === "low" && cMeta.key === "volatile") adj = clamp01(adj * 0.90);
+      if(risk === "mid" && cMeta.key === "risky") adj = clamp01(adj * 0.85);
+      if(risk === "high" && (cMeta.key === "risky" || cMeta.key === "volatile")) adj = clamp01(adj * 1.10);
+
+      out.push({ ...r, finalScore: adj, finalScore100: Math.round(adj * 100) });
+    }
+    return out;
+  }
+
+
 
   function sortItems(items, mode) {
     const arr = Array.isArray(items) ? [...items] : [];
@@ -1030,14 +1459,14 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     const mode = getAdvSort();
 
     if (state.assisted.active && Array.isArray(state.assisted.lastRoutesRaw) && state.assisted.lastRoutesRaw.length) {
-      const sorted = sortItems(state.assisted.lastRoutesRaw, mode);
+      const sorted = sortItems(applyRiskToResults(state.assisted.lastRoutesRaw), mode);
       state.assisted.lastRoutes = sorted;
       renderTopRoutes(sorted, state.assisted.lastScan || null);
       return true;
     }
 
     if (!state.assisted.active && Array.isArray(state.routeCache.lastResultsRaw) && state.routeCache.lastResultsRaw.length) {
-      const sorted = sortItems(state.routeCache.lastResultsRaw, mode);
+      const sorted = sortItems(applyRiskToResults(state.routeCache.lastResultsRaw), mode);
       state.routeCache.lastResults = sorted;
       renderTop3(sorted);
       renderGoodsList(sorted);
@@ -1047,7 +1476,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     return false;
   }
 // ------------------------------------------------------------
-  // ASSISTÉ: Top Routes Globales
+  // SUGGESTIONS: Top Routes Globales
   // ------------------------------------------------------------
   function clearResultsArea(message) {
     const row = $("top3Row");
@@ -1075,8 +1504,11 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
           <div class="top3-card goods-item" data-route="1"
                data-from="${escapeHtml(fromName)}" data-to="${escapeHtml(toName)}" data-commodity="${escapeHtml(commodity)}">
             <div class="goods-name">${escapeHtml(commodity)}</div>
+            <div class="goods-sub goods-badges">${window.safeCommodityBadgeHtml(r)}</div>
             <div class="goods-sub">${escapeHtml(fromName)} → ${escapeHtml(toName)}</div>
             <div class="goods-sub">Qté: ${qty} SCU • +${fmt0(pscu)}/SCU</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
             <div class="goods-sub stab-line">Score: <span class="score-pill ${scoreClass(score100(r))}">${fmt0(score100(r))}</span>/100 <span class="stab-badge ${stabMeta(r).cls}" title="${escapeHtml(stabMeta(r).title)}">${escapeHtml(stabMeta(r).label)}</span></div>
             <div class="goods-profit">+${fmt0(profit)} aUEC</div>
           </div>
@@ -1100,8 +1532,11 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
              data-from="${escapeHtml(fromName)}" data-to="${escapeHtml(toName)}" data-commodity="${escapeHtml(commodity)}">
           <div class="goods-left">
             <div class="goods-name">${escapeHtml(commodity)}</div>
+            <div class="goods-sub goods-badges">${window.safeCommodityBadgeHtml(r)}</div>
             <div class="goods-sub">${escapeHtml(fromName)}${escapeHtml(fromSys)} → ${escapeHtml(toName)}${escapeHtml(toSys)}</div>
             <div class="goods-sub">Qté: ${qty} SCU • +${fmt0(pscu)}/SCU</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
+            <div class="goods-sub">Stock: <span class="stock-pill ${stockMeta(qty).cls}" title="${escapeHtml(stockMeta(qty).title)}">${escapeHtml(stockMeta(qty).label)}</span>${stockMeta(qty).pct!==null?` • ${stockMeta(qty).pct}% cargo`:``}</div>
             <div class="goods-sub stab-line">Score: <span class="score-pill ${scoreClass(score100(r))}">${fmt0(score100(r))}</span>/100 <span class="stab-badge ${stabMeta(r).cls}" title="${escapeHtml(stabMeta(r).title)}">${escapeHtml(stabMeta(r).label)}</span></div>
           </div>
           <div class="goods-right">
@@ -1151,7 +1586,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     }
   }
 
-  async function fetchTopRoutes() {
+  async function fetchTopRoutes(opts={}) {
     const btn = $("advAssist");
     btn && (btn.disabled = true);
 
@@ -1192,8 +1627,12 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       if ($("advRouteJson")) $("advRouteJson").textContent = JSON.stringify(payload, null, 2);
 
       const routesRaw = Array.isArray(data?.routes) ? data.routes : [];
+      try { localStorage.setItem(TOP_ROUTES_CACHE_KEY, JSON.stringify({ at: Date.now(), routes: routesRaw })); } catch (_) {}
       state.assisted.lastRoutesRaw = routesRaw;
       const routes = sortItems(routesRaw, getAdvSort());
+      // Optional: commodity-driven search (client side filter)
+      const __q = (opts && typeof opts.commodityQuery === "string") ? opts.commodityQuery.trim() : "";
+      const routesFiltered = __q ? filterRoutesByCommodity(routes, __q) : routes;
       state.assisted.lastRoutes = routes;
       state.assisted.lastScan = data?.scan || null;
       state.assisted.active = true;
@@ -1202,16 +1641,38 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       state.routeCache.lastMeta = null;
       state.routeCache.lastPayload = null;
 
-      // Assisted view: no commodity lock forced; user chooses by clicking a route
+      // Suggestions view: no commodity lock forced; user chooses by clicking a route
       unlockCommodity();
+      if (__q){
+        const lbl = bestCommodityLabel(routes, __q) || __q;
+        lockCommodity(lbl);
+        // Ensure search count reflects filtering
+        const total = routes.length;
+        const shown = routesFiltered.length;
+        setAdvText("advCount", `${shown} / ${total} routes`);
+      }
 
-      renderTopRoutes(routes, data?.scan || null);
+      renderTopRoutes(routesFiltered, data?.scan || null);
       try { setSortStatus(); } catch (_) {}
     } catch (e) {
       console.warn("[hauling][assist] top routes failed:", e);
       setChip("Proxy/UEX indisponible", true);
       setAdvText("advRouteStatus", `Erreur: ${String(e?.message || e)}`);
-      clearResultsArea("Erreur scan routes (voir console).");
+            // Fallback: use last cached top routes if available
+      try {
+        const cached = JSON.parse(localStorage.getItem(TOP_ROUTES_CACHE_KEY) || "null");
+        if (cached && Array.isArray(cached.routes) && cached.routes.length) {
+          const cachedFiltered = applyRiskToResults(cached.routes);
+          const cachedSorted = sortItems(cachedFiltered, getAdvSort());
+          renderTopRoutes(cachedSorted, { cached: true, at: cached.at });
+          renderGoodsList(cachedSorted);
+          setAdvText("advRouteStatus", "Proxy indisponible — affichage cache.");
+        } else {
+          clearResultsArea("Erreur scan routes (voir console).");
+        }
+      } catch (_) {
+        clearResultsArea("Erreur scan routes (voir console).");
+      }
     } finally {
       btn && (btn.disabled = false);
       saveState();
@@ -1228,9 +1689,10 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
         state.advanced.risk = (r === "high" || r === "mid" || r === "low") ? r : "low";
 
         $qa(".quick-btn[data-risk]").forEach(b => b.classList.toggle("is-active", b === btn));
-        setAdvText("advRiskHint", `${riskHintText(state.advanced.risk)}  Score = profit pondéré par stabilité (selon risque).`);
+        setAdvText("advRiskHint", `${riskHintText(state.advanced.risk)}  Score = profit + stabilité + stock/zone (selon risque).`);
         saveState();
-      });
+              applySortAndRender();
+});
     });
 
     const onTermInput = (e) => {
@@ -1245,7 +1707,10 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     $("advRouteAnalyze")?.addEventListener("click", analyzeRouteAdvanced);
     $("advRefresh")?.addEventListener("click", analyzeRouteAdvanced);
 
-    // New: Assisté (Top routes)
+    // Goods search (filters the full results list)
+    wireGoodsSearch();
+
+    // New: Suggestions (Top routes)
     $("advAssist")?.addEventListener("click", fetchTopRoutes);
     // Tri (Score / Profit / Profit/SCU) — apply instantly (no refetch if cached)
     const __sortHandler = () => {
@@ -1288,7 +1753,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
       state.advanced.risk = "low";
       const lowBtn = $q('.quick-btn[data-risk="low"]');
       if (lowBtn) $qa(".quick-btn[data-risk]").forEach(b => b.classList.toggle("is-active", b === lowBtn));
-      setAdvText("advRiskHint", `${riskHintText("low")}  Score = profit pondéré par stabilité (selon risque).`);
+      setAdvText("advRiskHint", `${riskHintText("low")}  Score = profit + stabilité + stock/zone (selon risque).`);
 
       saveState();
     });
@@ -1310,7 +1775,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     setAdvText("advCount", "—");
     setAdvText("advMaj", "MAJ : —");
     setChip("—", false);
-    setAdvText("advRiskHint", `${riskHintText(state.advanced.risk || "low")}  Score = profit pondéré par stabilité (selon risque).`);
+    setAdvText("advRiskHint", `${riskHintText(state.advanced.risk || "low")}  Score = profit + stabilité + stock/zone (selon risque).`);
 
     if ($("advRouteFrom")) $("advRouteFrom").value = state.advanced.fromName || "";
     if ($("advRouteTo")) $("advRouteTo").value = state.advanced.toName || "";
@@ -1365,7 +1830,22 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
     if (state.tab === "advanced") showAdvanced();
     else showBeginner();
 
-    const pre = ($("advRouteFrom")?.value || "").trim();
+    
+    // Auto-suggestions on arrival: show Top 3 conseillées without clicking "Suggestions"
+    try{
+      const hasCached = Array.isArray(state?.assisted?.lastRoutesRaw) && state.assisted.lastRoutesRaw.length > 0;
+      if (!hasCached){
+        await fetchTopRoutes();
+      } else {
+        const routes = sortItems(state.assisted.lastRoutesRaw, getAdvSort());
+        renderTopRoutes(routes, state.assisted.lastScan || null);
+        setAdvText("advCount", `${routes.length} routes`);
+      }
+    } catch(e){
+      console.warn("[hauling] auto-suggestions failed:", e);
+    }
+
+const pre = ($("advRouteFrom")?.value || "").trim();
     if (pre.length >= 2) advSearchTerminals(pre).catch(() => {});
   }
 
@@ -1376,3 +1856,7 @@ function setAdvText(id, v) { const el = $(id); if (el) el.textContent = v || "�
 })();
 
 
+
+
+// Expose helpers for debugging / safety
+window.safeCommodityBadgeHtml = safeCommodityBadgeHtml;
