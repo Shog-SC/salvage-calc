@@ -1,30 +1,28 @@
-/* assets/js/salvage.js — V1.4.41 FULL
-   Recyclage (Salvage) — PU 4.5
-   ---------------------------------------------------------------------------
-   Objectifs V1.4.25
-   - FIX contrat UEX: supporte payload LEGACY (cmat/rmc à la racine) ET payload V1 (data.cmat/data.rmc)
-   - Mode Débutant / Mode Avancé + calculs live
-   - Top ventes + “où vendre maintenant” (bestTerminal)
-   - Historique prix: rendu canvas simple + tooltip (sans dépendance externe)
-   - Presets vaisseaux + tête de recyclage
-   - Configs (3 slots) en localStorage
+/* assets/js/salvage.js — V1.4.41 FULL Recyclage (Salvage) — PU 4.5
+---------------------------------------------------------------------------
+Objectifs V1.4.25
+- FIX contrat UEX: supporte payload LEGACY (cmat/rmc à la racine) ET payload V1 (data.cmat/data.rmc)
+- Mode Débutant / Mode Avancé + calculs live
+- Top ventes + “où vendre maintenant” (bestTerminal)
+- Historique prix: rendu canvas simple + tooltip (sans dépendance externe)
+- Presets vaisseaux + tête de recyclage
+- Configs (3 slots) en localStorage
 */
 
 (() => {
   "use strict";
 
-  /* -----------------------------
-     CONFIG & CONSTANTES
-  ------------------------------*/
+  /* ----------------------------- CONFIG & CONSTANTES ------------------------------*/
 
   const APP_VERSION = "V1.4.40";
-  const DEFAULT_GAME_VERSION = "4.4";
+  const DEFAULT_GAME_VERSION = "4.5";
 
   // IMPORTANT:
   // - Recyclage (frontend) attend historiquement le format LEGACY.
   // - Le Worker unifié peut répondre en LEGACY sur "/" ou "/salvage"
   //   et en V1 sur "/v1/salvage".
   // -> On utilise LEGACY par défaut, mais on parse les 2 formats (robuste).
+
   const UEX_PROXY_BASE = (window.UEX_PROXY_BASE || "https://uex-proxy.yoyoastico74.workers.dev").replace(/\/+$/, "");
   const UEX_ENDPOINT_LEGACY = `${UEX_PROXY_BASE}/salvage`;
   const UEX_ENDPOINT_V1 = `${UEX_PROXY_BASE}/v1/salvage`;
@@ -38,24 +36,92 @@
 
   // Basic ships presets (frontend-only; not tied to ships_v2.json)
   const SHIPS = [
-    { id: "salvation", name: "Salvation", profile: "Solo (rapide)", rmcHint: "Hull Scraping", cmatHint: "CMR/CMS → CMAT", loopMin: 40, refinePct: 30, badge: "ship-badge-solo", badgeText: "SOLO" },
-    { id: "vulture", name: "Vulture", profile: "Solo (standard)", rmcHint: "Hull Scraping", cmatHint: "CMR/CMS → CMAT", loopMin: 55, refinePct: 30, badge: "ship-badge-solo", badgeText: "SOLO" },
-    { id: "fortune", name: "Fortune", profile: "Solo (standard)", rmcHint: "Hull Scraping", cmatHint: "CMR/CMS → CMAT", loopMin: 55, refinePct: 30, badge: "ship-badge-solo", badgeText: "SOLO" },
-    { id: "reclaimer", name: "Reclaimer", profile: "Multi (logistique)", rmcHint: "Hull Scraping", cmatHint: "CMS → CMAT", loopMin: 60, refinePct: 15, badge: "ship-badge-multi", badgeText: "MULTI" },
-    { id: "other", name: "Autre / Custom", profile: "Custom", rmcHint: "—", cmatHint: "—", loopMin: 45, refinePct: 30, badge: "ship-badge-off", badgeText: "—" },
+    {
+      id: "salvation",
+      name: "Salvation",
+      profile: "Solo (rapide)",
+      rmcHint: "Hull Scraping",
+      cmatHint: "CMR/CMS → CMAT",
+      loopMin: 40,
+      refinePct: 30,
+      badge: "ship-badge-solo",
+      badgeText: "SOLO",
+    },
+    {
+      id: "vulture",
+      name: "Vulture",
+      profile: "Solo (standard)",
+      rmcHint: "Hull Scraping",
+      cmatHint: "CMR/CMS → CMAT",
+      loopMin: 55,
+      refinePct: 30,
+      badge: "ship-badge-solo",
+      badgeText: "SOLO",
+    },
+    {
+      id: "fortune",
+      name: "Fortune",
+      profile: "Solo (standard)",
+      rmcHint: "Hull Scraping",
+      cmatHint: "CMR/CMS → CMAT",
+      loopMin: 55,
+      refinePct: 30,
+      badge: "ship-badge-solo",
+      badgeText: "SOLO",
+    },
+    {
+      id: "reclaimer",
+      name: "Reclaimer",
+      profile: "Multi (logistique)",
+      rmcHint: "Hull Scraping",
+      cmatHint: "CMS → CMAT",
+      loopMin: 60,
+      refinePct: 15,
+      badge: "ship-badge-multi",
+      badgeText: "MULTI",
+    },
+    {
+      id: "other",
+      name: "Autre / Custom",
+      profile: "Custom",
+      rmcHint: "—",
+      cmatHint: "—",
+      loopMin: 45,
+      refinePct: 30,
+      badge: "ship-badge-off",
+      badgeText: "—",
+    },
   ];
 
   // Salvage head presets (optional helper)
   const HEADS = [
-    { id: "trawler", name: "Trawler (UIF)", speedMult: 6.0, note: "Speed x6.0 · Radius 0.6m · Efficiency 340" },
-    { id: "abrade",  name: "Abrade (UIF)",  speedMult: 3.5, note: "Speed x3.5 · Radius 0.9m · Efficiency 340" },
-    { id: "cinch",   name: "Cinch (UIF)",   speedMult: 1.5, note: "Speed x1.5 · Radius 1.0m · Efficiency 340" },
-    { id: "neutral", name: "Neutre",        speedMult: 6.0, note: "Sans bonus (baseline outil)" }
+    {
+      id: "trawler",
+      name: "Trawler (UIF)",
+      speedMult: 6.0,
+      note: "Speed x6.0 · Radius 0.6m · Efficiency 340",
+    },
+    {
+      id: "abrade",
+      name: "Abrade (UIF)",
+      speedMult: 3.5,
+      note: "Speed x3.5 · Radius 0.9m · Efficiency 340",
+    },
+    {
+      id: "cinch",
+      name: "Cinch (UIF)",
+      speedMult: 1.5,
+      note: "Speed x1.5 · Radius 1.0m · Efficiency 340",
+    },
+    {
+      id: "neutral",
+      name: "Neutre",
+      speedMult: 6.0,
+      note: "Sans bonus (baseline outil)",
+    },
   ];
 
-  /* -----------------------------
-     DOM HELPERS
-  ------------------------------*/
+  /* ----------------------------- DOM HELPERS ------------------------------*/
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -108,9 +174,7 @@
     el.textContent = text;
   }
 
-  /* -----------------------------
-     UI REFERENCES
-  ------------------------------*/
+  /* ----------------------------- UI REFERENCES ------------------------------*/
 
   // Modes
   const btnBeginner = $("#btnBeginner");
@@ -130,7 +194,6 @@
   const begRefineHint = $("#begRefineHint");
   const shipProfileBadge = $("#shipProfileBadge");
   const shipMetaHint = $("#shipMetaHint");
-
   const scuRmc = $("#scuRmc");
   const scuCmat = $("#scuCmat");
   const begLoopMinutes = $("#begLoopMinutes");
@@ -202,29 +265,27 @@
   const btnChartRefreshAdv = $("#btnChartRefreshAdv");
   const advChartStatus = $("#advChartStatus");
 
-  /* -----------------------------
-     STATE
-  ------------------------------*/
+  /* ----------------------------- STATE ------------------------------*/
 
   const state = {
     mode: "beginner",
-    lastUex: null,           // { cmat, rmc, meta? }
+    lastUex: null, // { cmat, rmc, meta? }
     lastUexOk: false,
     lastUexAt: null,
-    uexSource: null,         // "legacy" | "v1"
-    locks: { prices: false },
+    uexSource: null, // "legacy" | "v1"
+    locks: {
+      prices: false,
+    },
     chart: {
       seriesRmc: [],
       seriesCmat: [],
       spotRmc: 0,
       spotCmat: 0,
       hovering: false,
-    }
+    },
   };
 
-  /* -----------------------------
-     LOAD/SAVE CONFIGS
-  ------------------------------*/
+  /* ----------------------------- LOAD/SAVE CONFIGS ------------------------------*/
 
   function loadAllConfigs() {
     try {
@@ -253,7 +314,9 @@
   function setUiState(patch) {
     const cur = getUiState();
     const next = { ...cur, ...(patch || {}) };
-    try { localStorage.setItem(LS_KEY_UI, JSON.stringify(next)); } catch {}
+    try {
+      localStorage.setItem(LS_KEY_UI, JSON.stringify(next));
+    } catch {}
   }
 
   function snapshotCurrentInputs() {
@@ -293,17 +356,16 @@
 
     if (scuRmc) scuRmc.value = safePosNum(s.b_scuRmc, 0);
     if (scuCmat) scuCmat.value = safePosNum(s.b_scuCmat, 0);
-    if (begLoopMinutes) begLoopMinutes.value = Math.max(1, Math.round(safePosNum(s.b_loopMin, 45)));
-
+    if (begLoopMinutes) begLoopMinutes.value = Math.max(1, Math.round(s.b_loopMin ?? 45));
     if (priceRmc) priceRmc.value = safePosNum(s.b_priceRmc, 0);
     if (priceCmat) priceCmat.value = safePosNum(s.b_priceCmat, 0);
 
-    if (loopMinutes) loopMinutes.value = Math.max(1, Math.round(safePosNum(s.a_loopMin, 45)));
+    if (loopMinutes) loopMinutes.value = Math.max(1, Math.round(s.a_loopMin ?? 45));
     if (feesPct) feesPct.value = safePosNum(s.a_feesPct, 0);
-    if (thrOk) thrOk.value = Math.round(safePosNum(s.a_thrOk, DEFAULT_THR_OK));
-    if (thrGood) thrGood.value = Math.round(safePosNum(s.a_thrGood, DEFAULT_THR_GOOD));
+    if (thrOk) thrOk.value = Math.round(s.a_thrOk ?? DEFAULT_THR_OK);
+    if (thrGood) thrGood.value = Math.round(s.a_thrGood ?? DEFAULT_THR_GOOD);
     if (cmatRefineMode) cmatRefineMode.value = s.a_refineMode || "sell";
-    if (cmatRefineYield) cmatRefineYield.value = Math.max(0, Math.min(100, Math.round(safePosNum(s.a_refineYield, 30))));
+    if (cmatRefineYield) cmatRefineYield.value = Math.max(0, Math.min(100, Math.round(s.a_refineYield ?? 30)));
 
     if (advScuRmc) advScuRmc.value = safePosNum(s.a_advScuRmc, 0);
     if (advScuCmat) advScuCmat.value = safePosNum(s.a_advScuCmat, 0);
@@ -319,37 +381,33 @@
     recalcAdvanced();
   }
 
-  /* -----------------------------
-     MODES
-  ------------------------------*/
+  /* ----------------------------- MODES ------------------------------*/
 
   function setMode(nextMode) {
-    const m = (nextMode === "advanced") ? "advanced" : "beginner";
+    const m = nextMode === "advanced" ? "advanced" : "beginner";
     state.mode = m;
 
     if (btnBeginner) btnBeginner.classList.toggle("is-active", m === "beginner");
     if (btnAdvanced) btnAdvanced.classList.toggle("is-active", m === "advanced");
 
-    if (modeBeginner) modeBeginner.style.display = (m === "beginner") ? "" : "none";
-    if (modeAdvanced) modeAdvanced.style.display = (m === "advanced") ? "" : "none";
+    if (modeBeginner) modeBeginner.style.display = m === "beginner" ? "" : "none";
+    if (modeAdvanced) modeAdvanced.style.display = m === "advanced" ? "" : "none";
 
     setUiState({ mode: m });
   }
 
-  /* -----------------------------
-     PRESETS (SHIP + HEAD)
-  ------------------------------*/
+  /* ----------------------------- PRESETS (SHIP + HEAD) ------------------------------*/
 
   function fillShipSelect() {
     if (!shipSelect) return;
-    shipSelect.innerHTML = SHIPS.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+    shipSelect.innerHTML = SHIPS.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
     const ui = getUiState();
     shipSelect.value = ui.ship || "vulture";
   }
 
   function getShipPreset() {
     const id = shipSelect?.value || "other";
-    return SHIPS.find(s => s.id === id) || SHIPS[SHIPS.length - 1];
+    return SHIPS.find((s) => s.id === id) || SHIPS[SHIPS.length - 1];
   }
 
   function syncShipPreset(applyValues) {
@@ -366,14 +424,18 @@
     if (applyValues) {
       if (begLoopMinutes && preset.loopMin) begLoopMinutes.value = preset.loopMin;
       if (loopMinutes && preset.loopMin) loopMinutes.value = preset.loopMin;
-
       if (cmatRefineYield && preset.refinePct) cmatRefineYield.value = preset.refinePct;
-
       if (begRefineHint) {
-        setText(begRefineHint, `Preset conseillé : boucle ${preset.loopMin} min • raffinage ${preset.refinePct}%`);
+        setText(
+          begRefineHint,
+          `Preset conseillé : boucle ${preset.loopMin} min • raffinage ${preset.refinePct}%`
+        );
       }
     } else if (begRefineHint) {
-      setText(begRefineHint, `Preset conseillé : boucle ${preset.loopMin} min • raffinage ${preset.refinePct}%`);
+      setText(
+        begRefineHint,
+        `Preset conseillé : boucle ${preset.loopMin} min • raffinage ${preset.refinePct}%`
+      );
     }
 
     setUiState({ ship: preset.id });
@@ -381,17 +443,17 @@
 
   function fillHeadSelect() {
     if (!salvageHeadSelect) return;
-    salvageHeadSelect.innerHTML = HEADS.map(h => `<option value="${h.id}">${h.name}</option>`).join("");
+    salvageHeadSelect.innerHTML = HEADS.map((h) => `<option value="${h.id}">${h.name}</option>`).join("");
     const ui = getUiState();
     salvageHeadSelect.value = ui.head || "trawler";
   }
 
   function getHeadPreset() {
     const id = salvageHeadSelect?.value || "trawler";
-    return HEADS.find(h => h.id === id) || HEADS[0];
+    return HEADS.find((h) => h.id === id) || HEADS[0];
   }
 
-  function getHeadSpeedFactor(){
+  function getHeadSpeedFactor() {
     const h = getHeadPreset();
     // Normalisation contre Trawler (6.0) : choisir Trawler ne change pas votre durée saisie.
     const raw = safePosNum(h?.speedMult, 1) || 1;
@@ -400,12 +462,11 @@
     return Math.max(0.1, factor);
   }
 
-  function getEffectiveLoopMinutes(rawMinutes){
+  function getEffectiveLoopMinutes(rawMinutes) {
     const mins = Math.max(1, safePosNum(rawMinutes, 0));
     const f = getHeadSpeedFactor();
     return mins / f;
   }
-
 
   function syncHeadPreset(applyValues) {
     const h = getHeadPreset();
@@ -431,20 +492,20 @@
 
   function syncRefineVisibility() {
     const mode = cmatRefineMode?.value || "sell";
-    if (refineBlock) refineBlock.style.display = (mode === "refine") ? "" : "none";
+    if (refineBlock) refineBlock.style.display = mode === "refine" ? "" : "none";
   }
 
-  /* -----------------------------
-     UEX FETCH + PARSING
-  ------------------------------*/
+  /* ----------------------------- UEX FETCH + PARSING ------------------------------*/
 
   function normalizeUexPayload(json) {
     // Supports:
     // - LEGACY: { status, cmat, rmc }
-    // - V1:     { status, data:{ cmat, rmc }, meta }
+    // - V1: { status, data:{ cmat, rmc }, meta }
+
     const cmat = json?.cmat || json?.data?.cmat || null;
     window.__chartSeries = window.__chartSeries || {};
     window.__chartSeries.cmat = cmat;
+
     const rmc = json?.rmc || json?.data?.rmc || null;
     window.__chartSeries = window.__chartSeries || {};
     window.__chartSeries.rmc = rmc;
@@ -459,12 +520,15 @@
       rmc,
       meta,
       _raw: json,
-      _format: (json?.data && json?.meta) ? "v1" : "legacy",
+      _format: json?.data && json?.meta ? "v1" : "legacy",
     };
   }
 
   async function fetchJson(url) {
-    const res = await fetch(url, { method: "GET", headers: { "Accept": "application/json" } });
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   }
@@ -492,6 +556,7 @@
         const raw = await fetchJson(u);
         const norm = normalizeUexPayload(raw);
         if (!norm) throw new Error("Payload invalide (cmat/rmc manquants)");
+
         state.lastUex = norm;
         state.lastUexOk = true;
         state.lastUexAt = Date.now();
@@ -506,7 +571,6 @@
     state.lastUexOk = false;
     state.lastUexAt = Date.now();
     state.uexSource = null;
-
     throw lastErr || new Error("UEX indisponible");
   }
 
@@ -525,37 +589,39 @@
     if (advPriceCmat) advPriceCmat.value = pCmat;
 
     // lock badge + UI affordance
-    state.locks.prices = (pRmc > 0 || pCmat > 0);
+    state.locks.prices = pRmc > 0 || pCmat > 0;
     if (uexLockBadge) uexLockBadge.style.display = state.locks.prices ? "" : "none";
 
     // Optional: soften input style when locked (CSS already supports .uex-locked)
-    const container = document.querySelector(".page-salvage");
+    const container = document.querySelector("page-salvage");
     if (container) container.classList.toggle("uex-locked", state.locks.prices);
   }
 
   function renderTopSales(listEl, topTerminals) {
     if (!listEl) return;
-
     const items = Array.isArray(topTerminals) ? topTerminals : [];
     if (!items.length) {
       setHtml(listEl, `<div class="top-sales-empty">Aucune donnée</div>`);
       return;
     }
 
-    const html = items.slice(0, 3).map(t => {
-      const name = t?.name || t?.terminal_name || "—";
-      const loc = t?.location || t?.planet || t?.system || "";
-      const sell = safePosNum(t?.sell, 0);
-      return `
-        <div class="sale-item top-sales-item">
-          <div class="sale-main">
-            <div class="sale-terminal top-sales-term">${escapeHtml(name)}</div>
-            <div class="sale-location top-sales-loc">${escapeHtml(loc || "—")}</div>
+    const html = items
+      .slice(0, 3)
+      .map((t) => {
+        const name = t?.name || t?.terminal_name || "—";
+        const loc = t?.location || t?.planet || t?.system || "";
+        const sell = safePosNum(t?.sell, 0);
+        return `
+          <div class="sale-item top-sales-item">
+            <div class="sale-main">
+              <div class="sale-terminal top-sales-term">${escapeHtml(name)}</div>
+              <div class="sale-location top-sales-loc">${escapeHtml(loc || "—")}</div>
+            </div>
+            <div class="sale-price top-sales-price">${fmtMoney(sell)}</div>
           </div>
-          <div class="sale-price top-sales-price">${fmtMoney(sell)}</div>
-        </div>
-      `;
-    }).join("");
+        `;
+      })
+      .join("");
 
     setHtml(listEl, html);
   }
@@ -581,6 +647,7 @@
     // Moment: recommend the higher value per SCU (simple)
     let moment = "—";
     let justif = "—";
+
     if (rSell > 0 || cSell > 0) {
       if (rSell >= cSell) {
         moment = "RMC";
@@ -590,6 +657,7 @@
         justif = `CMAT > RMC (${fmtInt(cSell)} vs ${fmtInt(rSell)} aUEC/SCU)`;
       }
     }
+
     if (advMarketMoment) setText(advMarketMoment, moment);
     if (marketJustification) setText(marketJustification, justif);
   }
@@ -603,7 +671,10 @@
 
     if (uexLastUpdate) {
       const t = state.lastUexAt ? new Date(state.lastUexAt) : null;
-      setText(uexLastUpdate, t ? `Dernière MAJ UEX : ${t.toLocaleString("fr-FR")}` : "Dernière MAJ UEX : —");
+      setText(
+        uexLastUpdate,
+        t ? `Dernière MAJ UEX : ${t.toLocaleString("fr-FR")}` : "Dernière MAJ UEX : —"
+      );
     }
 
     if (advChartStatus) {
@@ -621,9 +692,7 @@
       .replaceAll("'", "&#039;");
   }
 
-  /* -----------------------------
-     CALCS
-  ------------------------------*/
+  /* ----------------------------- CALCS ------------------------------*/
 
   function computeStatus(perHour, okThr, goodThr) {
     const v = safePosNum(perHour, 0);
@@ -639,18 +708,18 @@
   function recalcBeginner() {
     const qRmc = safePosNum(scuRmc?.value, 0);
     const qCmat = safePosNum(scuCmat?.value, 0);
-
     const pRmc = safePosNum(priceRmc?.value, 0);
     const pCmat = safePosNum(priceCmat?.value, 0);
 
-    const loopMin = getEffectiveLoopMinutes(Math.max(1, Math.round(safePosNum(begLoopMinutes?.value, 45))));
+    const loopMin = getEffectiveLoopMinutes(
+      Math.max(1, Math.round(safePosNum(begLoopMinutes?.value, 45)))
+    );
     const hours = loopMin / 60;
 
     const valRmc = qRmc * pRmc;
     const valCmat = qCmat * pCmat;
     const total = valRmc + valCmat;
-
-    const perHour = hours > 0 ? (total / hours) : 0;
+    const perHour = hours > 0 ? total / hours : 0;
 
     if (outRmc) setText(outRmc, fmtMoney(valRmc));
     if (outCmat) setText(outCmat, fmtMoney(valCmat));
@@ -665,27 +734,29 @@
   function recalcAdvanced() {
     const qRmc = safePosNum(advScuRmc?.value, 0);
     const qCmatIn = safePosNum(advScuCmat?.value, 0);
-
     const pRmc = safePosNum(advPriceRmc?.value, 0);
     const pCmat = safePosNum(advPriceCmat?.value, 0);
 
-    const loopMin = getEffectiveLoopMinutes(Math.max(1, Math.round(safePosNum(loopMinutes?.value, 45))));
+    const loopMin = getEffectiveLoopMinutes(
+      Math.max(1, Math.round(safePosNum(loopMinutes?.value, 45)))
+    );
     const hours = loopMin / 60;
-
     const fees = clamp01(safePosNum(feesPct?.value, 0) / 100); // 0..1
 
     const mode = cmatRefineMode?.value || "sell";
-    const yieldPct = Math.max(0, Math.min(100, Math.round(safePosNum(cmatRefineYield?.value, 30))));
+    const yieldPct = Math.max(
+      0,
+      Math.min(100, Math.round(safePosNum(cmatRefineYield?.value, 30)))
+    );
 
     // If refine mode: effective CMAT output is scaled by yield%
-    const qCmatEff = (mode === "refine") ? (qCmatIn * (yieldPct / 100)) : qCmatIn;
+    const qCmatEff = mode === "refine" ? qCmatIn * (yieldPct / 100) : qCmatIn;
 
     const valRmc = qRmc * pRmc;
     const valCmat = qCmatEff * pCmat;
-
     const gross = valRmc + valCmat;
     const net = gross * (1 - fees);
-    const perHour = hours > 0 ? (net / hours) : 0;
+    const perHour = hours > 0 ? net / hours : 0;
 
     if (advValRmc) setText(advValRmc, fmtMoney(valRmc));
     if (advValCmat) setText(advValCmat, fmtMoney(valCmat));
@@ -703,9 +774,7 @@
     if (sumStatus) setBadge(sumStatus, st.kind, st.label);
   }
 
-  /* -----------------------------
-     CHART (CANVAS)
-  ------------------------------*/
+  /* ----------------------------- CHART (CANVAS) ------------------------------*/
 
   function getCanvasCtx() {
     if (!advPriceHistoryChart) return null;
@@ -713,7 +782,6 @@
     return ctx || null;
   }
 
-  
   /* -----------------------------
      CHART (ADV — UEX HISTORY)
      Goals:
@@ -728,7 +796,7 @@
     const n = Number(v);
     if (Number.isFinite(n)) {
       // seconds vs ms
-      return n < 2_000_000_000 ? (n * 1000) : n;
+      return n < 2_000_000_000 ? n * 1000 : n;
     }
     const d = new Date(v);
     const t = d.getTime();
@@ -738,9 +806,9 @@
   function parsePrice(v) {
     if (v === null || v === undefined) return null;
     if (typeof v === "number" && Number.isFinite(v)) return v;
-
-    // Accept "7 497", "7,497", "7497.0"
-    const s = String(v).trim()
+    // Accept '7 497', '7,497', '7497.0'
+    const s = String(v)
+      .trim()
       .replaceAll("\u00a0", " ")
       .replaceAll(" ", "")
       .replaceAll(",", ".");
@@ -754,7 +822,9 @@
     const out = [];
 
     for (const it of src) {
-      const t = parseTime(it?.t ?? it?.time ?? it?.ts ?? it?.at ?? it?.date ?? it?.createdAt);
+      const t = parseTime(
+        it?.t ?? it?.time ?? it?.ts ?? it?.at ?? it?.date ?? it?.createdAt
+      );
       if (!t) continue;
 
       // Try common field names
@@ -766,8 +836,8 @@
         parsePrice(it?.avg) ??
         parsePrice(it?.avg_sell) ??
         parsePrice(it?.avgSell);
-
       if (v === null) continue;
+
       out.push({ t, v });
     }
 
@@ -803,14 +873,18 @@
 
   function boundsOf(series) {
     if (!series || !series.length) return null;
-    let minV = Infinity, maxV = -Infinity;
+    let minV = Infinity,
+      maxV = -Infinity;
     for (const p of series) {
       if (!Number.isFinite(p.v)) continue;
       if (p.v < minV) minV = p.v;
       if (p.v > maxV) maxV = p.v;
     }
     if (!Number.isFinite(minV) || !Number.isFinite(maxV)) return null;
-    if (minV === maxV) { minV -= 1; maxV += 1; }
+    if (minV === maxV) {
+      minV -= 1;
+      maxV += 1;
+    }
     return { minV, maxV };
   }
 
@@ -819,34 +893,30 @@
     const b = Array.isArray(seriesB) ? seriesB : [];
     const all = a.concat(b);
     if (!all.length) return null;
-    let minT = Infinity, maxT = -Infinity;
+
+    let minT = Infinity,
+      maxT = -Infinity;
     for (const p of all) {
       if (!Number.isFinite(p.t)) continue;
       if (p.t < minT) minT = p.t;
       if (p.t > maxT) maxT = p.t;
     }
     if (!Number.isFinite(minT) || !Number.isFinite(maxT)) return null;
-    if (minT === maxT) { minT -= 3600_000; maxT += 3600_000; }
+    if (minT === maxT) {
+      minT -= 3_600_000;
+      maxT += 3_600_000;
+    }
     return { minT, maxT };
-  }
-
-  function getCanvasCtx() {
-    if (!advPriceHistoryChart) return null;
-    return advPriceHistoryChart.getContext("2d");
   }
 
   function setCanvasDprSize() {
     if (!advPriceHistoryChart) return;
-
     const rect = advPriceHistoryChart.getBoundingClientRect();
     const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
-
     const w = Math.max(1, Math.round(rect.width * dpr));
     const h = Math.max(1, Math.round(rect.height * dpr));
-
     if (advPriceHistoryChart.width !== w) advPriceHistoryChart.width = w;
     if (advPriceHistoryChart.height !== h) advPriceHistoryChart.height = h;
-
     const ctx = getCanvasCtx();
     if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
   }
@@ -860,12 +930,12 @@
 
   function drawChart(seriesR, seriesC, hoverT = null, spot = null) {
     if (!advPriceHistoryChart) return;
-
     setCanvasDprSize();
     const ctx = getCanvasCtx();
     if (!ctx) return;
 
     const tb = timeBounds(seriesR, seriesC);
+
     const spotR = spot && Number.isFinite(spot.rmc) ? spot.rmc : null;
     const spotC = spot && Number.isFinite(spot.cmat) ? spot.cmat : null;
 
@@ -873,7 +943,6 @@
     const bC = boundsWithSpot(seriesC, spotC);
 
     ctx.clearRect(0, 0, advPriceHistoryChart.width, advPriceHistoryChart.height);
-
     if (!tb || (!bR && !bC)) return;
 
     const w = advPriceHistoryChart.width;
@@ -884,16 +953,23 @@
     const gw = w - pad.l - pad.r;
     const gh = h - pad.t - pad.b;
 
-    const xOf = (t) => pad.l + ((t - tb.minT) / Math.max(1, (tb.maxT - tb.minT))) * gw;
+    const xOf = (t) =>
+      pad.l + ((t - tb.minT) / Math.max(1, tb.maxT - tb.minT)) * gw;
 
     const yOfR = (v) => {
-      if (!bR) return pad.t + (gh / 2);
-      return pad.t + (1 - ((v - bR.minV) / Math.max(1, (bR.maxV - bR.minV)))) * gh;
+      if (!bR) return pad.t + gh / 2;
+      return (
+        pad.t +
+        (1 - (v - bR.minV) / Math.max(1, bR.maxV - bR.minV)) * gh
+      );
     };
 
     const yOfC = (v) => {
-      if (!bC) return pad.t + (gh / 2);
-      return pad.t + (1 - ((v - bC.minV) / Math.max(1, (bC.maxV - bC.minV)))) * gh;
+      if (!bC) return pad.t + gh / 2;
+      return (
+        pad.t +
+        (1 - (v - bC.minV) / Math.max(1, bC.maxV - bC.minV)) * gh
+      );
     };
 
     // Grid (horizontal)
@@ -901,7 +977,7 @@
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let i = 0; i <= 4; i++) {
-      const y = pad.t + (gh * i / 4);
+      const y = pad.t + (gh * i) / 4;
       ctx.moveTo(pad.l, y);
       ctx.lineTo(pad.l + gw, y);
     }
@@ -912,7 +988,7 @@
     ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
     const ticksX = 5;
     for (let i = 0; i < ticksX; i++) {
-      const tt = tb.minT + (tb.maxT - tb.minT) * (i / (ticksX - 1));
+      const tt = tb.minT + ((tb.maxT - tb.minT) * i) / (ticksX - 1);
       const x = xOf(tt);
       ctx.fillText(fmtDateShort(tt), x - 16, h - 8);
     }
@@ -922,16 +998,17 @@
     if (bR) {
       ctx.fillStyle = "rgba(0,229,255,0.70)";
       for (let i = 0; i < yTicks; i++) {
-        const v = bR.maxV - (bR.maxV - bR.minV) * (i / (yTicks - 1));
-        const y = pad.t + (gh * i / (yTicks - 1));
+        const v = bR.maxV - ((bR.maxV - bR.minV) * i) / (yTicks - 1);
+        const y = pad.t + (gh * i) / (yTicks - 1);
         ctx.fillText(fmtInt(v), 8, y + 4);
       }
     }
+
     if (bC) {
       ctx.fillStyle = "rgba(231,236,255,0.70)";
       for (let i = 0; i < yTicks; i++) {
-        const v = bC.maxV - (bC.maxV - bC.minV) * (i / (yTicks - 1));
-        const y = pad.t + (gh * i / (yTicks - 1));
+        const v = bC.maxV - ((bC.maxV - bC.minV) * i) / (yTicks - 1);
+        const y = pad.t + (gh * i) / (yTicks - 1);
         const txt = fmtInt(v);
         const tw = ctx.measureText(txt).width;
         ctx.fillText(txt, w - 8 - tw, y + 4);
@@ -940,7 +1017,6 @@
 
     function strokeSeries(series, stroke, fill, yFn) {
       if (!series || !series.length) return;
-
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -964,9 +1040,20 @@
     }
 
     // RMC (left axis)
-    strokeSeries(seriesR, "rgba(0,229,255,0.90)", "rgba(0,229,255,0.90)", yOfR);
+    strokeSeries(
+      seriesR,
+      "rgba(0,229,255,0.90)",
+      "rgba(0,229,255,0.90)",
+      yOfR
+    );
+
     // CMAT (right axis)
-    strokeSeries(seriesC, "rgba(231,236,255,0.85)", "rgba(231,236,255,0.85)", yOfC);
+    strokeSeries(
+      seriesC,
+      "rgba(231,236,255,0.85)",
+      "rgba(231,236,255,0.85)",
+      yOfC
+    );
 
     // Spot lines (actuel / best sell)
     // NOTE: We draw a dashed horizontal reference line for current UEX best sell (or fallback price),
@@ -991,15 +1078,18 @@
       ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
       const txt = `${label} ${fmtInt(v)}`;
       const tw = ctx.measureText(txt).width;
-      const x = alignRight ? (pad.l + gw - tw - 6) : (pad.l + 6);
+      const x = alignRight ? pad.l + gw - tw - 6 : pad.l + 6;
       ctx.fillText(txt, x, y - 6);
       ctx.restore();
     }
 
     // RMC spot (left)
-    if (spotR !== null) drawSpotLine(spotR, yOfR, "rgba(0,229,255,0.95)", "Spot", false);
+    if (spotR !== null)
+      drawSpotLine(spotR, yOfR, "rgba(0,229,255,0.95)", "Spot", false);
+
     // CMAT spot (right)
-    if (spotC !== null) drawSpotLine(spotC, yOfC, "rgba(231,236,255,0.95)", "Spot", true);
+    if (spotC !== null)
+      drawSpotLine(spotC, yOfC, "rgba(231,236,255,0.95)", "Spot", true);
 
     // Hover crosshair + highlights
     if (hoverT && Number.isFinite(hoverT)) {
@@ -1037,7 +1127,10 @@
     let bestD = Infinity;
     for (const p of series) {
       const d = Math.abs(p.t - t);
-      if (d < bestD) { bestD = d; best = p; }
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
     }
     return best;
   }
@@ -1058,10 +1151,14 @@
     if (!on) return;
 
     // Build content
-    const htmlLines = (Array.isArray(lines) ? lines : []).map(l => (
-      `<div class="tt-line"><span class="tt-k">${escapeHtml(l.k)}</span><span class="tt-v">${escapeHtml(l.v)}</span></div>`
-    )).join("");
-
+    const htmlLines = (Array.isArray(lines) ? lines : [])
+      .map(
+        (l) =>
+          `<div class="tt-line"><span class="tt-k">${escapeHtml(
+            l.k
+          )}</span><span class="tt-v">${escapeHtml(l.v)}</span></div>`
+      )
+      .join("");
     advChartTooltip.innerHTML = `
       <div class="tt-title">${escapeHtml(title)}</div>
       <div class="tt-body">${htmlLines}</div>
@@ -1074,8 +1171,8 @@
     // we dock the tooltip to the chart side with only minimal clamping.
     const parent = advChartTooltip.parentElement;
     const pr = parent ? parent.getBoundingClientRect() : null;
-
     const edgePad = 12;
+
     let leftPx = x;
     let topPx = y;
     let xPart = "-50%";
@@ -1103,7 +1200,7 @@
     }
 
     advChartTooltip.style.left = `${leftPx}px`;
-    advChartTooltip.style.top  = `${topPx}px`;
+    advChartTooltip.style.top = `${topPx}px`;
     advChartTooltip.style.transform = `translate(${xPart}, ${yPart})`;
   }
 
@@ -1114,7 +1211,10 @@
       state.chart.hovering = false;
       state.chart.hoverT = null;
       setTooltip(false, 0, 0, "", []);
-      drawChart(state.chart.seriesRmc, state.chart.seriesCmat, null, { rmc: state.chart.spotRmc, cmat: state.chart.spotCmat });
+      drawChart(state.chart.seriesRmc, state.chart.seriesCmat, null, {
+        rmc: state.chart.spotRmc,
+        cmat: state.chart.spotCmat,
+      });
     });
 
     advPriceHistoryChart.addEventListener("mousemove", (ev) => {
@@ -1128,7 +1228,10 @@
       const y = yCss * dpr;
 
       const tb = timeBounds(state.chart.seriesRmc, state.chart.seriesCmat);
-      if (!tb) { setTooltip(false, 0, 0, "", []); return; }
+      if (!tb) {
+        setTooltip(false, 0, 0, "", []);
+        return;
+      }
 
       const t = timeAtX(x, tb);
       const pR = nearestByTime(state.chart.seriesRmc, t);
@@ -1138,12 +1241,23 @@
         state.chart.hovering = false;
         state.chart.hoverT = null;
         setTooltip(false, 0, 0, "", []);
-        drawChart(state.chart.seriesRmc, state.chart.seriesCmat, null, { rmc: state.chart.spotRmc, cmat: state.chart.spotCmat });
+        drawChart(state.chart.seriesRmc, state.chart.seriesCmat, null, {
+          rmc: state.chart.spotRmc,
+          cmat: state.chart.spotCmat,
+        });
         return;
       }
 
       // Title uses the nearest existing point time
-      const tRef = (pR && pC) ? (Math.abs(pR.t - t) <= Math.abs(pC.t - t) ? pR.t : pC.t) : ((pR ? pR.t : pC.t));
+      const tRef =
+        pR && pC
+          ? Math.abs(pR.t - t) <= Math.abs(pC.t - t)
+            ? pR.t
+            : pC.t
+          : pR
+          ? pR.t
+          : pC.t;
+
       const dt = new Date(tRef);
       const title = dt.toLocaleString("fr-FR");
 
@@ -1152,15 +1266,26 @@
       if (pC) lines.push({ k: "CMAT", v: `${fmtInt(pC.v)} aUEC/SCU` });
 
       // Also show current spot (best sell) for reference
-      if (Number.isFinite(state.chart.spotRmc) && state.chart.spotRmc > 0) lines.push({ k: "Spot RMC", v: `${fmtInt(state.chart.spotRmc)} aUEC/SCU` });
-      if (Number.isFinite(state.chart.spotCmat) && state.chart.spotCmat > 0) lines.push({ k: "Spot CMAT", v: `${fmtInt(state.chart.spotCmat)} aUEC/SCU` });
+      if (Number.isFinite(state.chart.spotRmc) && state.chart.spotRmc > 0)
+        lines.push({
+          k: "Spot RMC",
+          v: `${fmtInt(state.chart.spotRmc)} aUEC/SCU`,
+        });
+      if (Number.isFinite(state.chart.spotCmat) && state.chart.spotCmat > 0)
+        lines.push({
+          k: "Spot CMAT",
+          v: `${fmtInt(state.chart.spotCmat)} aUEC/SCU`,
+        });
 
       // Tooltip positioned in CSS pixels
       setTooltip(true, xCss, yCss, title, lines);
 
       state.chart.hovering = true;
       state.chart.hoverT = t;
-      drawChart(state.chart.seriesRmc, state.chart.seriesCmat, t, { rmc: state.chart.spotRmc, cmat: state.chart.spotCmat });
+      drawChart(state.chart.seriesRmc, state.chart.seriesCmat, t, {
+        rmc: state.chart.spotRmc,
+        cmat: state.chart.spotCmat,
+      });
     });
   }
 
@@ -1170,8 +1295,14 @@
 
     // Spot = "best sell" when available (matches Top ventes / vendre maintenant),
     // fallback to generic market price if best terminal is missing.
-    const spotR = safePosNum(uex?.rmc?.bestTerminal?.sell, safePosNum(uex?.rmc?.price, 0));
-    const spotC = safePosNum(uex?.cmat?.bestTerminal?.sell, safePosNum(uex?.cmat?.price, 0));
+    const spotR = safePosNum(
+      uex?.rmc?.bestTerminal?.sell,
+      safePosNum(uex?.rmc?.price, 0)
+    );
+    const spotC = safePosNum(
+      uex?.cmat?.bestTerminal?.sell,
+      safePosNum(uex?.cmat?.price, 0)
+    );
 
     state.chart.seriesRmc = r;
     state.chart.seriesCmat = c;
@@ -1180,9 +1311,8 @@
 
     drawChart(r, c, state.chart.hoverT || null, { rmc: spotR, cmat: spotC });
   }
-/* -----------------------------
-     RESET
-  ------------------------------*/
+
+  /* ----------------------------- RESET ------------------------------*/
 
   function resetBeginner() {
     if (scuRmc) scuRmc.value = 0;
@@ -1206,7 +1336,6 @@
     if (advScuCmat) advScuCmat.value = 0;
     if (advPriceRmc) advPriceRmc.value = 0;
     if (advPriceCmat) advPriceCmat.value = 0;
-
     if (feesPct) feesPct.value = 0;
     if (thrOk) thrOk.value = DEFAULT_THR_OK;
     if (thrGood) thrGood.value = DEFAULT_THR_GOOD;
@@ -1217,9 +1346,7 @@
     recalcAdvanced();
   }
 
-  /* -----------------------------
-     EVENT WIRES
-  ------------------------------*/
+  /* ----------------------------- EVENT WIRES ------------------------------*/
 
   function bindEvents() {
     // Mode buttons
@@ -1227,16 +1354,35 @@
     btnAdvanced?.addEventListener("click", () => setMode("advanced"));
 
     // Ship / head presets
-    shipSelect?.addEventListener("change", () => { syncShipPreset(true); recalcBeginner(); recalcAdvanced(); });
-    salvageHeadSelect?.addEventListener("change", () => { syncHeadPreset(true); recalcBeginner(); recalcAdvanced(); });
+    shipSelect?.addEventListener("change", () => {
+      syncShipPreset(true);
+      recalcBeginner();
+      recalcAdvanced();
+    });
+
+    salvageHeadSelect?.addEventListener("change", () => {
+      syncHeadPreset(true);
+      recalcBeginner();
+      recalcAdvanced();
+    });
 
     // Beginner inputs -> calc
-    [scuRmc, scuCmat, begLoopMinutes, priceRmc, priceCmat].forEach(el => {
+    [scuRmc, scuCmat, begLoopMinutes, priceRmc, priceCmat].forEach((el) => {
       el?.addEventListener("input", () => recalcBeginner());
     });
 
     // Advanced inputs -> calc
-    [advScuRmc, advScuCmat, advPriceRmc, advPriceCmat, loopMinutes, feesPct, thrOk, thrGood, cmatRefineYield].forEach(el => {
+    [
+      advScuRmc,
+      advScuCmat,
+      advPriceRmc,
+      advPriceCmat,
+      loopMinutes,
+      feesPct,
+      thrOk,
+      thrGood,
+      cmatRefineYield,
+    ].forEach((el) => {
       el?.addEventListener("input", () => recalcAdvanced());
     });
 
@@ -1285,7 +1431,6 @@
     try {
       setUexStatus(false, "Chargement…");
       const uex = await refreshUex({ preferV1 });
-
       setUexStatus(true, "");
 
       // render + apply
@@ -1298,7 +1443,12 @@
         // also nudge advSellNowFeedback
         if (advSellNowFeedback) {
           const src = state.uexSource ? `source ${state.uexSource}` : "source inconnue";
-          setText(advSellNowFeedback, `UEX OK (${src}) • MAJ: ${new Date(state.lastUexAt).toLocaleTimeString("fr-FR")}`);
+          setText(
+            advSellNowFeedback,
+            `UEX OK (${src}) • MAJ: ${new Date(
+              state.lastUexAt
+            ).toLocaleTimeString("fr-FR")}`
+          );
         }
       }
 
@@ -1307,28 +1457,26 @@
       // Recalc after price fills
       recalcBeginner();
       recalcAdvanced();
-
     } catch (e) {
       setUexStatus(false, `${String(e?.message || e)}`);
+
       // keep manual inputs; just clear top lists if empty
       renderTopSales(topRmc, []);
       renderTopSales(topCmat, []);
       if (advSellNowFeedback) setText(advSellNowFeedback, "UEX KO • Mode manuel.");
       drawChart([], [], null, { rmc: 0, cmat: 0 });
+
       recalcBeginner();
       recalcAdvanced();
     }
   }
 
-  /* -----------------------------
-     INIT
-  ------------------------------*/
+  /* ----------------------------- INIT ------------------------------*/
 
   function init() {
     // Presets
     fillShipSelect();
     fillHeadSelect();
-
     syncShipPreset(true);
     syncHeadPreset(false);
 
@@ -1358,7 +1506,11 @@
     doRefreshUex({ preferV1: false });
 
     // Debug hook (optional)
-    window.__SALVAGE_APP__ = { version: APP_VERSION, refresh: doRefreshUex, state };
+    window.__SALVAGE_APP__ = {
+      version: APP_VERSION,
+      refresh: doRefreshUex,
+      state,
+    };
   }
 
   if (document.readyState === "loading") {
@@ -1368,37 +1520,35 @@
   }
 })();
 
-
 /* =========================================================
    V1.4.37 — Tech footer wiring (SALVAGE) — restore Details toggle
    - Toggle via the whole bar button (#versionToggle)
    - Also toggle if user clicks on the label span (#versionToggleLabel)
    - Copy button keeps working and does not toggle
    ========================================================= */
-(function(){
+
+(function () {
   const $ = (id) => document.getElementById(id);
 
-  function initTechFooter(){
+  function initTechFooter() {
     const toggleBtn = $("versionToggle");
     const details = $("versionDetails");
     const label = $("versionToggleLabel");
     const copyBtn = $("copyVersionsBtn");
-
-    if(!toggleBtn || !details) return;
+    if (!toggleBtn || !details) return;
 
     const isOpen = () => !details.classList.contains("is-hidden");
-
     const setOpen = (open) => {
-      if(open){
+      if (open) {
         details.classList.remove("is-hidden");
         toggleBtn.setAttribute("aria-expanded", "true");
         details.setAttribute("aria-hidden", "false");
-        if(label) label.textContent = "Masquer";
-      }else{
+        if (label) label.textContent = "Masquer";
+      } else {
         details.classList.add("is-hidden");
         toggleBtn.setAttribute("aria-expanded", "false");
         details.setAttribute("aria-hidden", "true");
-        if(label) label.textContent = "Détails";
+        if (label) label.textContent = "Détails";
       }
     };
 
@@ -1407,13 +1557,12 @@
 
     const onToggle = (e) => {
       // If clicking copy, do nothing (copy handler manages it)
-      if(e && e.target && (e.target.id === "copyVersionsBtn")) return;
+      if (e && e.target && e.target.id === "copyVersionsBtn") return;
       setOpen(!isOpen());
     };
 
     toggleBtn.addEventListener("click", onToggle);
-
-    if(label){
+    if (label) {
       label.style.cursor = "pointer";
       label.addEventListener("click", (e) => {
         e.preventDefault();
@@ -1424,75 +1573,84 @@
 
     // Escape closes
     document.addEventListener("keydown", (e) => {
-      if(e.key === "Escape" && isOpen()) setOpen(false);
+      if (e.key === "Escape" && isOpen()) setOpen(false);
     });
 
     // Copy should not toggle
-    if(copyBtn){
+    if (copyBtn) {
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
       });
     }
   }
 
-  if(document.readyState === "loading"){
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initTechFooter);
-  }else{
+  } else {
     initTechFooter();
   }
 })();
-
 
 /* =========================================================
    CHART — Hover tracker UI (tooltip div overlay)
    - More readable than canvas-only
    - Keeps crosshair + nearest point highlight
    ========================================================= */
-function ensureChartTooltip(container){
-  if(!container) return null;
+
+function ensureChartTooltip(container) {
+  if (!container) return null;
   let tip = container.querySelector(".chart-tooltip");
-  if(tip) return tip;
+  if (tip) return tip;
 
   tip = document.createElement("div");
   tip.className = "chart-tooltip is-hidden";
   tip.innerHTML = `
     <div class="chart-tooltip__date"></div>
-    <div class="chart-tooltip__row"><span class="dot dot-rmc"></span><span class="lbl">RMC</span><span class="val" data-k="rmc">—</span></div>
-    <div class="chart-tooltip__row"><span class="dot dot-cmat"></span><span class="lbl">CMAT</span><span class="val" data-k="cmat">—</span></div>
+    <div class="chart-tooltip__row">
+      <span class="dot dot-rmc"></span>
+      <span class="lbl">RMC</span>
+      <span class="val" data-k="rmc">—</span>
+    </div>
+    <div class="chart-tooltip__row">
+      <span class="dot dot-cmat"></span>
+      <span class="lbl">CMAT</span>
+      <span class="val" data-k="cmat">—</span>
+    </div>
   `;
+
   container.style.position = container.style.position || "relative";
   container.appendChild(tip);
   return tip;
 }
 
-
 /* Hook used by initChartHoverTracker().
-   It expects window.__chartSeries = { labels:[], rmc:[], cmat:[], x:[] } to be set by the chart renderer.
-*/
-window.__salvageChartHover = function(event, canvas){
+   It expects window.__chartSeries = { labels:[], rmc:[], cmat:[], x:[] }
+   to be set by the chart renderer. */
+window.__salvageChartHover = function (event, canvas) {
   const s = window.__chartSeries;
-  if(!s || !Array.isArray(s.x) || s.x.length === 0) return null;
+  if (!s || !Array.isArray(s.x) || s.x.length === 0) return null;
+
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
 
   // Find nearest by pixel x (precomputed)
   let best = 0;
   let bestD = Infinity;
-  for(let i=0;i<s.x.length;i++){
+  for (let i = 0; i < s.x.length; i++) {
     const d = Math.abs(s.x[i] - x);
-    if(d < bestD){
+    if (d < bestD) {
       bestD = d;
       best = i;
     }
   }
+
   return {
     index: best,
-    dateLabel: (s.labels && s.labels[best]) ? s.labels[best] : "",
-    rmc: (s.rmc && s.rmc[best] != null) ? s.rmc[best] : null,
-    cmat: (s.cmat && s.cmat[best] != null) ? s.cmat[best] : null,
+    dateLabel: s.labels && s.labels[best] ? s.labels[best] : "",
+    rmc: s.rmc && s.rmc[best] != null ? s.rmc[best] : null,
+    cmat: s.cmat && s.cmat[best] != null ? s.cmat[best] : null,
   };
 };
-
 
 /* =========================================================
    V1.4.38 — Versions techniques (SALVAGE) — fill values
@@ -1500,7 +1658,8 @@ window.__salvageChartHover = function(event, canvas){
    - No network fetch
    - No endpoint exposure
    ========================================================= */
-(function(){
+
+(function () {
   const TECH = {
     module: "RECYCLAGE",
     moduleVersion: "V1.4.35",
@@ -1510,16 +1669,17 @@ window.__salvageChartHover = function(event, canvas){
     core: "V1.5.20",
     ships: "v2.0.5",
     pu: "4.5",
-    workerName: "UEX Proxy"
+    workerName: "UEX Proxy",
   };
 
   const $ = (id) => document.getElementById(id);
-  function setText(id, v){
+
+  function setText(id, v) {
     const el = $(id);
-    if(el) el.textContent = (v == null || v === "") ? "—" : String(v);
+    if (el) el.textContent = v == null || v === "" ? "—" : String(v);
   }
 
-  function fill(){
+  function fill() {
     setText("tvModuleSalvage", `${TECH.module} ${TECH.moduleVersion}`);
     setText("tvHtmlSalvage", TECH.html);
     setText("tvCssSalvage", TECH.css);
@@ -1537,53 +1697,54 @@ window.__salvageChartHover = function(event, canvas){
 
   // Optional hook: call this when a worker payload returns meta.
   // Example: window.__salvageOnProxyMeta(payload.meta)
-  window.__salvageOnProxyMeta = function(meta){
-    try{
-      if(!meta) return;
-      if(meta.workerVersion) setText("tvWorkerSalvage", `${TECH.workerName} ${meta.workerVersion}`);
-      if(meta.contractVersion) setText("tvContractSalvage", meta.contractVersion);
-      if(meta.generatedAt) setText("tvGenSalvage", meta.generatedAt);
-      if(meta.gameVersion) setText("tvPuSalvage", meta.gameVersion);
+  window.__salvageOnProxyMeta = function (meta) {
+    try {
+      if (!meta) return;
+      if (meta.workerVersion)
+        setText("tvWorkerSalvage", `${TECH.workerName} ${meta.workerVersion}`);
+      if (meta.contractVersion) setText("tvContractSalvage", meta.contractVersion);
+      if (meta.generatedAt) setText("tvGenSalvage", meta.generatedAt);
+      if (meta.gameVersion) setText("tvPuSalvage", meta.gameVersion);
       setText("tvSourceSalvage", "payload");
-    }catch(_e){}
+    } catch (_e) {}
   };
 
-  if(document.readyState === "loading"){
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", fill);
-  }else{
+  } else {
     fill();
   }
 })();
-
 
 /* =========================================================
    V1.4.39 — Chart tracker polish (SALVAGE)
    - Crosshair + point snap overlay (non-destructive)
    - Better formatting (aUEC, thousands, monospace digits)
    - Touch support (tap/drag)
+
    Dependencies:
    - window.__chartSeries must expose: labels[], rmc[], cmat[], x[] (px in CSS space)
    - Optional: window.__chartSeries.yRmc[], yCmat[] (px in CSS space) for point dots
    ========================================================= */
-(function(){
+
+(function () {
   const fmtAuec = (v) => {
-    if(v == null || v === "" || Number.isNaN(Number(v))) return "—";
+    if (v == null || v === "" || Number.isNaN(Number(v))) return "—";
     const n = Number(v);
-    try{
+    try {
       return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " aUEC";
-    }catch(_){
+    } catch (_) {
       return String(Math.round(n)) + " aUEC";
     }
   };
 
-  function ensureOverlayCanvas(wrap, baseCanvas){
-    if(!wrap || !baseCanvas) return null;
+  function ensureOverlayCanvas(wrap, baseCanvas) {
+    if (!wrap || !baseCanvas) return null;
     let c = wrap.querySelector("canvas.chart-overlay");
-    if(c) return c;
-
+    if (c) return c;
     c = document.createElement("canvas");
     c.className = "chart-overlay";
-    c.setAttribute("aria-hidden","true");
+    c.setAttribute("aria-hidden", "true");
     c.style.position = "absolute";
     c.style.inset = "0";
     c.style.pointerEvents = "none";
@@ -1591,7 +1752,7 @@ window.__salvageChartHover = function(event, canvas){
     return c;
   }
 
-  function sizeOverlay(overlay, baseCanvas){
+  function sizeOverlay(overlay, baseCanvas) {
     const dpr = window.devicePixelRatio || 1;
     const rect = baseCanvas.getBoundingClientRect();
     overlay.width = Math.max(1, Math.round(rect.width * dpr));
@@ -1603,8 +1764,8 @@ window.__salvageChartHover = function(event, canvas){
     return ctx;
   }
 
-  function drawOverlay(ctx, canvasCssW, canvasCssH, x, yRmc, yCmat){
-    ctx.clearRect(0,0,canvasCssW,canvasCssH);
+  function drawOverlay(ctx, canvasCssW, canvasCssH, x, yRmc, yCmat) {
+    ctx.clearRect(0, 0, canvasCssW, canvasCssH);
 
     // Crosshair line
     ctx.globalAlpha = 0.75;
@@ -1616,21 +1777,23 @@ window.__salvageChartHover = function(event, canvas){
 
     // Points
     const drawDot = (y, alpha) => {
-      if(typeof y !== "number" || !isFinite(y)) return;
+      if (typeof y !== "number" || !isFinite(y)) return;
       ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI*2);
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 0.95;
       ctx.beginPath();
-      ctx.arc(x, y, 7, 0, Math.PI*2);
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
       ctx.stroke();
     };
 
     // RMC dot uses currentColor from CSS? We'll use explicit stroke/fill colors via computed styles on wrap (CSS vars)
     const root = document.documentElement;
-    const accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#00e5ff";
-    const text = getComputedStyle(root).getPropertyValue("--text").trim() || "#e7ecff";
+    const accent =
+      getComputedStyle(root).getPropertyValue("--accent").trim() || "#00e5ff";
+    const text =
+      getComputedStyle(root).getPropertyValue("--text").trim() || "#e7ecff";
 
     // RMC
     ctx.strokeStyle = accent;
@@ -1645,26 +1808,28 @@ window.__salvageChartHover = function(event, canvas){
     ctx.globalAlpha = 1;
   }
 
-  function patchTooltipFormatting(){
+  function patchTooltipFormatting() {
     // If a tooltip exists, enforce formatting of value nodes.
     const tip = document.querySelector(".page-salvage .chart-tooltip");
-    if(!tip) return;
+    if (!tip) return;
     tip.classList.add("chart-tooltip--polished");
   }
 
-  function initPolishedHover(){
-    const baseCanvas = document.getElementById("advChartCanvas") || document.getElementById("priceHistoryCanvas");
-    if(!baseCanvas) return;
+  function initPolishedHover() {
+    const baseCanvas =
+      document.getElementById("advChartCanvas") ||
+      document.getElementById("priceHistoryCanvas");
+    if (!baseCanvas) return;
 
-    const wrap = baseCanvas.closest(".chart-wrap") || baseCanvas.parentElement;
-    if(!wrap) return;
+    const wrap =
+      baseCanvas.closest(".chart-wrap") || baseCanvas.parentElement;
+    if (!wrap) return;
 
     const tip = wrap.querySelector(".chart-tooltip");
     const overlay = ensureOverlayCanvas(wrap, baseCanvas);
-    if(!overlay) return;
+    if (!overlay) return;
 
     let ctx = null;
-
     const redraw = () => {
       ctx = sizeOverlay(overlay, baseCanvas);
     };
@@ -1672,14 +1837,14 @@ window.__salvageChartHover = function(event, canvas){
     window.addEventListener("resize", redraw);
 
     const hideOverlay = () => {
-      if(!ctx) return;
+      if (!ctx) return;
       const rect = baseCanvas.getBoundingClientRect();
-      ctx.clearRect(0,0,rect.width,rect.height);
+      ctx.clearRect(0, 0, rect.width, rect.height);
     };
 
     const update = (clientX, clientY) => {
       const s = window.__chartSeries;
-      if(!s || !Array.isArray(s.x) || s.x.length === 0) return;
+      if (!s || !Array.isArray(s.x) || s.x.length === 0) return;
 
       const rect = baseCanvas.getBoundingClientRect();
       const xCss = clientX - rect.left;
@@ -1688,79 +1853,88 @@ window.__salvageChartHover = function(event, canvas){
       // Nearest by x
       let best = 0;
       let bestD = Infinity;
-      for(let i=0;i<s.x.length;i++){
+      for (let i = 0; i < s.x.length; i++) {
         const d = Math.abs(s.x[i] - xCss);
-        if(d < bestD){ bestD = d; best = i; }
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
       }
 
       // Tooltip values
-      if(tip){
+      if (tip) {
         tip.classList.remove("is-hidden");
         const dateEl = tip.querySelector(".chart-tooltip__date");
         const rmcEl = tip.querySelector('[data-k="rmc"]');
         const cmatEl = tip.querySelector('[data-k="cmat"]');
-
-        if(dateEl) dateEl.textContent = (s.labels && s.labels[best]) ? s.labels[best] : "";
-        if(rmcEl) rmcEl.textContent = fmtAuec(s.rmc ? s.rmc[best] : null);
-        if(cmatEl) cmatEl.textContent = fmtAuec(s.cmat ? s.cmat[best] : null);
+        if (dateEl)
+          dateEl.textContent =
+            s.labels && s.labels[best] ? s.labels[best] : "";
+        if (rmcEl) rmcEl.textContent = fmtAuec(s.rmc ? s.rmc[best] : null);
+        if (cmatEl) cmatEl.textContent = fmtAuec(s.cmat ? s.cmat[best] : null);
 
         // Position tooltip near cursor, clamped
         const pad = 12;
         const tw = tip.offsetWidth || 240;
         const th = tip.offsetHeight || 90;
-
         let left = xCss + pad;
         let top = yCss + pad;
-
         const maxL = rect.width - tw - 6;
         const maxT = rect.height - th - 6;
-        if(left > maxL) left = xCss - tw - pad;
-        if(top > maxT) top = yCss - th - pad;
-        if(left < 6) left = 6;
-        if(top < 6) top = 6;
-
+        if (left > maxL) left = xCss - tw - pad;
+        if (top > maxT) top = yCss - th - pad;
+        if (left < 6) left = 6;
+        if (top < 6) top = 6;
         tip.style.left = `${left}px`;
         tip.style.top = `${top}px`;
       }
 
       // Overlay crosshair + snap points (if y arrays exist)
-      const yRmc = (s.yRmc && typeof s.yRmc[best] === "number") ? s.yRmc[best] : undefined;
-      const yCmat = (s.yCmat && typeof s.yCmat[best] === "number") ? s.yCmat[best] : undefined;
-
+      const yRmc =
+        s.yRmc && typeof s.yRmc[best] === "number" ? s.yRmc[best] : undefined;
+      const yCmat =
+        s.yCmat && typeof s.yCmat[best] === "number" ? s.yCmat[best] : undefined;
       const rect2 = baseCanvas.getBoundingClientRect();
       drawOverlay(ctx, rect2.width, rect2.height, s.x[best], yRmc, yCmat);
     };
 
     // Mouse events
     baseCanvas.addEventListener("mouseleave", () => {
-      if(tip) tip.classList.add("is-hidden");
+      if (tip) tip.classList.add("is-hidden");
       hideOverlay();
     });
     baseCanvas.addEventListener("mousemove", (e) => update(e.clientX, e.clientY));
 
     // Touch events (tap/drag)
-    baseCanvas.addEventListener("touchstart", (e) => {
-      if(!e.touches || !e.touches[0]) return;
-      const t = e.touches[0];
-      update(t.clientX, t.clientY);
-    }, { passive: true });
-    baseCanvas.addEventListener("touchmove", (e) => {
-      if(!e.touches || !e.touches[0]) return;
-      const t = e.touches[0];
-      update(t.clientX, t.clientY);
-    }, { passive: true });
+    baseCanvas.addEventListener(
+      "touchstart",
+      (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        const t = e.touches[0];
+        update(t.clientX, t.clientY);
+      },
+      { passive: true }
+    );
+    baseCanvas.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        const t = e.touches[0];
+        update(t.clientX, t.clientY);
+      },
+      { passive: true }
+    );
     baseCanvas.addEventListener("touchend", () => {
-      if(tip) tip.classList.add("is-hidden");
+      if (tip) tip.classList.add("is-hidden");
       hideOverlay();
     });
 
     patchTooltipFormatting();
   }
 
-  if(document.readyState === "loading"){
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initPolishedHover);
-  }else{
+  } else {
     initPolishedHover();
   }
 })();
-
