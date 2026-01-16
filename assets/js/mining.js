@@ -7,7 +7,7 @@
     if(Math.abs(n) < 10) return `${n.toFixed(1)}%`;
     return `${Math.round(n)}%`;
   }
-/* assets/js/mining.js - Version V1.5.29
+/* assets/js/mining.js - Version V1.5.33 (REMOVE_COPY_URL)
    Module: MINAGE (Mode Débutant) - Mega Package (suite)
    Changements V1.2.1 :
    - Suppression des phrases/hints demandés (texte UI)
@@ -2185,7 +2185,6 @@ function miningInitAdvancedScaffold(){
     // Actions
     metaBtn: document.getElementById("advMetaBtn"),
     computeBtn: document.getElementById("advComputeBtn"),
-    copyBtn: document.getElementById("advCopyEndpointBtn"),
     status: document.getElementById("advStatus"),
 
     // Results
@@ -2334,30 +2333,6 @@ function miningInitAdvancedScaffold(){
   function advSetError(message){
     if(els.resError) els.resError.textContent = message || "Erreur inconnue.";
     advSetVisibleState("error");
-  }
-
-  async function advCopyToClipboard(text){
-    const t = String(text || "");
-    try{
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        await navigator.clipboard.writeText(t);
-        return true;
-      }
-    }catch(_){}
-    try{
-      const ta = document.createElement("textarea");
-      ta.value = t;
-      ta.setAttribute("readonly","true");
-      ta.style.position = "fixed";
-      ta.style.top = "-1000px";
-      ta.style.left = "-1000px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return true;
-    }catch(_){}
-    return false;
   }
 
   function advGetApiBase(){
@@ -3081,9 +3056,48 @@ function advRenderSelection(){
     els.kpis.innerHTML = kpis.map((k, i) => {
       const isRef = (k.label === "Raffinerie / Méthode");
       const cls = `kpi${isRef ? " kpi-wide kpi-refinery-method" : ""}`;
-      const valueHtml = isRef
+      let valueHtml = isRef
         ? `${escapeHtml(refineryLabel)}<br><span class="kpi-sub">${escapeHtml(methodLabel)}</span>`
         : escapeHtml(k.value);
+
+      if (isRef) {
+        const hasCost = (typeof t.cost_auec === "number" && t.cost_auec > 0.01);
+        const tips = (!hasCost && Array.isArray(payload?.yield_bonus_tips)) ? payload.yield_bonus_tips : [];
+        const ranks = (!hasCost && Array.isArray(payload?.yield_bonus_rankings)) ? payload.yield_bonus_rankings : [];
+
+        const toPrettyOre = (s) => {
+          const v = String(s || "").trim();
+          if (!v) return "-";
+          // keep first letter uppercase; preserve spaces
+          return v.charAt(0).toUpperCase() + v.slice(1);
+        };
+
+        if (ranks.length) {
+          const line = ranks
+            .filter(r => r && r.label && typeof r.avg_yield_bonus_pct === "number")
+            .slice(0, 3)
+            .map((r, i) => `#${i + 1} ${escapeHtml(String(r.label))} ${fmtPct(r.avg_yield_bonus_pct)}`)
+            .join(" • ");
+          if (line) valueHtml += `<br><span class="kpi-sub">Top rendement (moy.) : ${line}</span>`;
+        }
+
+        if (tips.length) {
+          const lines = tips
+            .filter(t => t && t.refinery && t.refinery.label && typeof t.yield_bonus_pct === "number" && t.ore_key)
+            .slice(0, 6)
+            .map(t => {
+              const pct = Number(t.yield_bonus_pct);
+              const pctTxt = (pct >= 0 ? `+${fmtPct(pct)}` : `${fmtPct(pct)}`);
+              const ore = toPrettyOre(t.ore_key);
+              const ref = escapeHtml(String(t.refinery.label));
+              return `Va à ${ref} : ${pctTxt} rendement sur ${escapeHtml(ore)}`;
+            });
+
+          if (lines.length) {
+            valueHtml += lines.map(l => `<br><span class="kpi-sub">${l}</span>`).join("");
+          }
+        }
+      }
 
       return `
       <div class="${cls}">
@@ -3210,17 +3224,6 @@ function advRenderSelection(){
     }
   }
 
-  function advCopyEndpoint(){
-    const items = advGetSelectedItems();
-    const endpoint = advBuildEndpoint(items);
-    if(!endpoint){
-      advStatus("Impossible de copier: API non configurée ou sélection vide.");
-      return;
-    }
-    advCopyToClipboard(endpoint);
-    advStatus("URL API copiée.");
-  }
-
   async function advHandleAdd(){
     await advEnsureCatalog();
 
@@ -3286,7 +3289,6 @@ function advRenderSelection(){
   // Actions: load meta, compute, copy endpoint
   if(els.metaBtn) els.metaBtn.addEventListener("click", () => { try{ advLoadMeta({ force:true }); }catch(_){} });
   if(els.computeBtn) els.computeBtn.addEventListener("click", () => { try{ advCompute(); }catch(_){} });
-  if(els.copyBtn) els.copyBtn.addEventListener("click", () => { try{ advCopyEndpoint(); }catch(_){} });
 
 if(els.clearBtn) els.clearBtn.addEventListener("click", () => advHandleClear());
 
